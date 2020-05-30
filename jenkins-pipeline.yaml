@@ -1,0 +1,96 @@
+  pipeline {
+    environment {
+    registry = "nblotti/asset"
+    registryCredential = 'dockerhub_id'
+    dockerImage = ''
+
+  }
+    agent any
+    tools {
+    maven 'mvn3'
+    jdk 'jdk8'
+
+  }
+    stages {
+
+    stage ('Initialize') {
+    steps {
+    sh '''
+    echo "PATH = ${PATH}"
+    echo "M2_HOME = ${M2_HOME}"
+    '''
+    }
+    }
+    stage('Cloning our Git') {
+    steps {
+    git 'git@github.com:nblotti/asset.git'
+
+  }
+
+  }
+    stage("Build & Deploy SNAPSHOT") {
+    steps {
+    sh "mvn -B deploy"
+    }
+    }
+
+    stage("Release") {
+    steps {
+    sh "mvn -B release:prepare"
+    sh "mvn -B release:perform"
+    script {
+  pom =    readMavenPom file: 'target/checkout/pom.xml'
+                                version = pom.version
+  }
+
+
+
+
+  }
+  }
+
+    stage('Building our image') {
+    steps{
+    script {
+    dockerImage = docker.build(registry +":v"+"${version}", "./target")
+
+  }
+
+  }
+
+  }
+    stage('Deploy our image') {
+    steps{
+    script {
+    docker.withRegistry( '', registryCredential ) {
+    dockerImage.push()
+
+  }
+
+  }
+
+  }
+
+  }
+    stage('Kube deploy') {
+    steps{
+    sh "kubectl set image deployment/nblotti-asset nblotti=nblotti/asset:v${version} --record"
+
+  }
+
+  }
+    stage('Cleaning up') {
+    steps{
+    sh "docker rmi $registry:v" +"${version}"
+
+  }
+
+  }
+  }
+    post {
+    always {
+    deleteDir()
+
+  }
+  }
+  }

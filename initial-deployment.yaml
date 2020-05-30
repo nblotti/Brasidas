@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nblotti-asset
+  labels:
+    app: nblotti_asset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nblotti_asset
+  template:
+    metadata:
+      labels:
+        app: nblotti_asset
+    spec:
+      containers:
+        - name: nblotti
+          image: nblotti/asset:v0.0.8
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: regcred

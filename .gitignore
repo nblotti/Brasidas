@@ -1,3 +1,9 @@
+mvnw
+mvnw.cmd
+HELP.md
+Asset.iml
+.idea
+.mvn
 target/
 pom.xml.tag
 pom.xml.releaseBackup
