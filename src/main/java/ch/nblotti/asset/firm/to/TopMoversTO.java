@@ -17,6 +17,10 @@ public class TopMoversTO implements Serializable {
 
 
   @Id
+  @Column(name = "id")
+  private Integer id;
+
+
   @Column(name = "code")
   private String code;
 
@@ -53,6 +57,15 @@ public class TopMoversTO implements Serializable {
 
   @Column(name = "lastMove")
   private Double percentChange;
+
+
+  public Integer getId() {
+    return id;
+  }
+
+  public void setId(Integer id) {
+    this.id = id;
+  }
 
   public LocalDate getDate() {
     return date;
