@@ -28,6 +28,8 @@ public class TopMoversTO implements Serializable {
   @Column(name = "exchange")
   private String exchange;
 
+  @Column(name = "CURRENT_EXCHANGE")
+  private String currentExchange;
 
   @Column(name = "name")
   private String name;
@@ -161,5 +163,13 @@ public class TopMoversTO implements Serializable {
 
   public void setPreviousAdjustedClose(Double previousAdjustedClose) {
     this.previousAdjustedClose = previousAdjustedClose;
+  }
+
+  public String getCurrentExchange() {
+    return currentExchange;
+  }
+
+  public void setCurrentExchange(String currentExchange) {
+    this.currentExchange = currentExchange;
   }
 }
