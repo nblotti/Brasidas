@@ -31,6 +31,12 @@ public class TopMoversTO implements Serializable {
   @Column(name = "CURRENT_EXCHANGE")
   private String currentExchange;
 
+  @Column(name = "sector")
+  private String sector;
+
+  @Column(name = "industry")
+  private String industry;
+
   @Column(name = "name")
   private String name;
 
@@ -171,5 +177,21 @@ public class TopMoversTO implements Serializable {
 
   public void setCurrentExchange(String currentExchange) {
     this.currentExchange = currentExchange;
+  }
+
+  public String getSector() {
+    return sector;
+  }
+
+  public void setSector(String sector) {
+    this.sector = sector;
+  }
+
+  public String getIndustry() {
+    return industry;
+  }
+
+  public void setIndustry(String industry) {
+    this.industry = industry;
   }
 }
