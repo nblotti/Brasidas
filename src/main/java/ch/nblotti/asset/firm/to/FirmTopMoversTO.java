@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 @Table(name = "mv_movers_volume")
 @Entity
-public class TopMoversTO implements Serializable {
+public class FirmTopMoversTO implements Serializable {
 
 
   @Column(name = "date")

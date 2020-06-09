@@ -1,4 +1,4 @@
-package ch.nblotti.asset.repository;
+package ch.nblotti.asset.common;
 
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
