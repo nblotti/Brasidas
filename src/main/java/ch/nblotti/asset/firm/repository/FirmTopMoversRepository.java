@@ -7,9 +7,9 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource(path = "firmtopmovers")
 public interface FirmTopMoversRepository extends ReadOnlyRepository<FirmTopMoversTO, String> {
 
-  Iterable<FirmTopMoversTO> findFirst10ByOrderByVolumeDesc();
+  Iterable<FirmTopMoversTO> findFirst10ByCurrentExchangeOrderByVolumeDesc(String exchange);
 
-  Iterable<FirmTopMoversTO> findFirst10ByOrderByPercentChangeDesc();
+  Iterable<FirmTopMoversTO> findFirst10ByCurrentExchangeOrderByPercentChangeDesc(String exchange);
 
-  Iterable<FirmTopMoversTO> findFirst10ByOrderByPercentChangeAsc();
+  Iterable<FirmTopMoversTO> findFirst10ByCurrentExchangeOrderByPercentChangeAsc(String exchange);
 }
