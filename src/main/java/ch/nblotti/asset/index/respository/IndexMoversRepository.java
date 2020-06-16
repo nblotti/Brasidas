@@ -7,4 +7,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource(path = "indices")
 public interface IndexMoversRepository extends ReadOnlyRepository<IndexMoversTO, String> {
 
+  Iterable<IndexMoversTO> findAllByNbrDays(int nbrDays);
 }

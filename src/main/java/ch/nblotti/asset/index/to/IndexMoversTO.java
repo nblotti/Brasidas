@@ -23,6 +23,9 @@ public class IndexMoversTO implements Serializable {
   @Column(name = "code")
   private String code;
 
+  @Column(name = "type")
+  private int nbrDays;
+
 
   @Column(name = "volume")
   private Double volume;
@@ -94,4 +97,11 @@ public class IndexMoversTO implements Serializable {
     this.previousAdjustedClose = previousAdjustedClose;
   }
 
+  public int getNbrDays() {
+    return nbrDays;
+  }
+
+  public void setNbrDays(int nbrDays) {
+    this.nbrDays = nbrDays;
+  }
 }
