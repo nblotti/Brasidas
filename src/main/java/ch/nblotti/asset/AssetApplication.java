@@ -1,17 +1,27 @@
 package ch.nblotti.asset;
 
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 
 @SpringBootApplication
+@EnableScheduling
+@EnableCaching
 public class AssetApplication {
 
   public static void main(String[] args) {
@@ -20,6 +30,8 @@ public class AssetApplication {
 
   @Value("${global.date-format}")
   public String dateFormat;
+
+
 
 
   @Bean
@@ -37,9 +49,31 @@ public class AssetApplication {
     return rt;
 
   }
+
   @Bean
   public DateTimeFormatter format1() {
     return DateTimeFormatter.ofPattern(dateFormat);
+  }
+
+
+  @Bean
+  public MessageConverter jsonMessageConverter() {
+    return new Jackson2JsonMessageConverter();
+  }
+
+  @Bean
+  public Queue loaderEvent() {
+    return new Queue("loader_event");
+  }
+
+  @Bean
+  FanoutExchange loaderExchange() {
+    return new FanoutExchange("loader_exchange");
+  }
+
+  @Bean
+  public Binding bindingFanoutExchangeQueueEFanout(FanoutExchange loaderExchange, Queue loaderEvent) {
+    return BindingBuilder.bind(loaderEvent).to(loaderExchange);
   }
 
 }
