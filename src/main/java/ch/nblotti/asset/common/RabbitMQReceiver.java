@@ -30,5 +30,14 @@ public class RabbitMQReceiver {
       c.clear();
     });
 
+    Optional.ofNullable(cacheManager.getCache("indicesQuotesByCode")).ifPresent(c -> {
+      c.clear();
+    });
+
+    Optional.ofNullable(cacheManager.getCache("indicesQuotesByCodeAfterDate")).ifPresent(c -> {
+      c.clear();
+    });
+
+
   }
 }
