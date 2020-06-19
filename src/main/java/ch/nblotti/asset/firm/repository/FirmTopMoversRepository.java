@@ -15,4 +15,6 @@ public interface FirmTopMoversRepository extends ReadOnlyRepository<FirmTopMover
   Iterable<FirmTopMoversTO> findFirst10ByCurrentExchangeOrderByPercentChangeDesc(String exchange);
   @Cacheable("firmFirst10ByPercentAsc")
   Iterable<FirmTopMoversTO> findFirst10ByCurrentExchangeOrderByPercentChangeAsc(String exchange);
+
+  FirmTopMoversTO findByCode(String code);
 }
