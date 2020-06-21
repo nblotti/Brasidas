@@ -13,7 +13,7 @@ public interface FirmQuoteRepository extends PagingAndSortingRepository<FirmEODQ
 
   public Collection<FirmEODQuoteTO> findAllByDate(LocalDate date);
 
-  public Collection<FirmEODQuoteTO> findByCodeOrderByDateAsc(String code);
+  public Collection<FirmEODQuoteTO> findByCode(String code);
 
   public Collection<FirmEODQuoteTO> findByCodeAndDateAfterOrderByDate(String code, @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date);
 }
