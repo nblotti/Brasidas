@@ -1,4 +1,4 @@
-package ch.nblotti.asset.index.to;
+package ch.nblotti.asset.firm.to;
 
 
 import javax.persistence.*;
