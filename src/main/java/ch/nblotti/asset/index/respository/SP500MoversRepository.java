@@ -14,13 +14,27 @@ public interface SP500MoversRepository extends ReadOnlyRepository<SP500MoversTO,
   @Query("select sp from SP500MoversTO sp where sp.viewType =1")
   Iterable<SP500MoversTO> findFSPirst10TopLoosers();
 
+
+  @Cacheable("findFSPirst3TopLoosers")
+  @Query("select sp from SP500MoversTO sp where sp.viewType =1")
+  Iterable<SP500MoversTO> findFSPirst3TopLoosers();
+
   @Cacheable("findFSPirst10TopWiners")
   @Query("select sp from SP500MoversTO sp where sp.viewType =2")
   Iterable<SP500MoversTO> findFSPirst10TopWiners();
 
+
+  @Cacheable("findFSPirst3TopWiners")
+  @Query("select sp from SP500MoversTO sp where sp.viewType =2")
+  Iterable<SP500MoversTO> findFSPirst3TopWiners();
+
   @Cacheable("findFSPirst10TopMovers")
   @Query("select sp from SP500MoversTO sp where sp.viewType =3")
   Iterable<SP500MoversTO> findFSPirst10TopMovers();
+
+  @Cacheable("findFSPirst3TopMovers")
+  @Query("select sp from SP500MoversTO sp where sp.viewType =3")
+  Iterable<SP500MoversTO> findFSPirst3TopMovers();
 
 
 }
