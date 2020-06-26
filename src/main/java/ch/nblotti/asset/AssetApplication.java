@@ -12,12 +12,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.format.Formatter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.ParseException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @SpringBootApplication
 @EnableScheduling
@@ -74,6 +78,23 @@ public class AssetApplication {
   @Bean
   public Binding bindingFanoutExchangeQueueEFanout(FanoutExchange loaderExchange, Queue loaderEvent) {
     return BindingBuilder.bind(loaderEvent).to(loaderExchange);
+  }
+
+
+  @Bean
+  public Formatter<LocalDate> localDateFormatter() {
+
+    return new Formatter<LocalDate>() {
+      @Override
+      public LocalDate parse(String text, Locale locale) throws ParseException {
+        return LocalDate.parse(text, format1());
+      }
+
+      @Override
+      public String print(LocalDate object, Locale locale) {
+        return format1().format(object);
+      }
+    };
   }
 
 }
