@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nblotti-asset
+  name: nblotti-brasidas
 spec:
   selector:
-    app: nblotti_asset
+    app: nblotti_brasidas
   type: NodePort
   ports:
     - protocol: TCP

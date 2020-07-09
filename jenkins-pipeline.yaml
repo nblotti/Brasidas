@@ -1,6 +1,6 @@
   pipeline {
     environment {
-    registry = "nblotti/asset"
+    registry = "nblotti/brasidas"
     registryCredential = 'dockerhub_id'
     dockerImage = ''
 
@@ -23,7 +23,7 @@
     }
     stage('Cloning our Git') {
     steps {
-    git 'git@github.com:nblotti/asset.git'
+    git 'git@github.com:nblotti/brasidas.git'
 
   }
 
@@ -74,7 +74,7 @@
   }
     stage('Kube deploy') {
     steps{
-    sh "kubectl set image deployment/nblotti-asset nblotti=nblotti/asset:v${version} --record"
+    sh "kubectl set image deployment/nblotti-asset nblotti=nblotti/brasidas:v${version} --record"
 
   }
 

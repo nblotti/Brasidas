@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nblotti-asset
+  name: nblotti-brasidas
   labels:
-    app: nblotti_asset
+    app: nblotti_brasidas
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nblotti_asset
+      app: nblotti_brasidas
   template:
     metadata:
       labels:
-        app: nblotti_asset
+        app: nblotti_brasidas
     spec:
       containers:
         - name: nblotti
-          image: nblotti/asset:v0.0.1
+          image: nblotti/brasidas:v0.0.1
           ports:
             - containerPort: 8080
       imagePullSecrets:
