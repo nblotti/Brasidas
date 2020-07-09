@@ -8,10 +8,10 @@
     <relativePath /> <!-- lookup parent from repository -->
   </parent>
   <groupId>ch.nblotti</groupId>
-  <artifactId>asset</artifactId>
+  <artifactId>brasidas</artifactId>
   <version>0.0.25-SNAPSHOT</version>
-  <name>asset</name>
-  <description>Asset entry point</description>
+  <name>brasidas</name>
+  <description>Brasidas entry point</description>
 
   <distributionManagement>
     <repository>
@@ -22,10 +22,10 @@
   </distributionManagement>
 
   <scm>
-    <url>https://github.com/nblotti/asset.git</url>
-    <connection>scm:git:git://git@github.com/nblotti/asset.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/nblotti/asset.git</developerConnection>
-    <tag>asset-0.0.22</tag>
+    <url>https://github.com/nblotti/brasidas.git</url>
+    <connection>scm:git:git://git@github.com/nblotti/brasidas.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/nblotti/brasidas.git</developerConnection>
+    <tag>brasidas-0.0.22</tag>
   </scm>
 
 
