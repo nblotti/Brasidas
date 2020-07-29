@@ -36,8 +36,6 @@ public class BrasidasApplication {
   public String dateFormat;
 
 
-
-
   @Bean
   public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
     return restTemplateBuilder
@@ -53,6 +51,7 @@ public class BrasidasApplication {
     return rt;
 
   }
+
 
   @Bean
   public DateTimeFormatter format1() {
