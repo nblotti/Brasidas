@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
@@ -29,16 +30,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 
   @Bean
-  public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
-    StrictHttpFirewall firewall = new StrictHttpFirewall();
-    firewall.setAllowUrlEncodedSlash(true);
+  public HttpFirewall defaultHttpFirewall() {
+    DefaultHttpFirewall firewall = new DefaultHttpFirewall();
     return firewall;
   }
 
   @Override
   public void configure(WebSecurity web) throws Exception {
     super.configure(web);
-    web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
+    web.httpFirewall(defaultHttpFirewall());
   }
 
   @Override
