@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.format.Formatter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -26,6 +27,7 @@ import java.util.Locale;
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
+@PropertySource(value = "classpath:override.properties", ignoreResourceNotFound = true)
 public class BrasidasApplication {
 
   public static void main(String[] args) {
@@ -42,14 +44,6 @@ public class BrasidasApplication {
       .setConnectTimeout(Duration.ofSeconds(30))
       .setReadTimeout(Duration.ofSeconds(30))
       .build();
-  }
-
-  @Bean
-  public RestTemplate restTemplate() {
-    RestTemplate rt = new RestTemplate();
-    rt.getMessageConverters().add(new StringHttpMessageConverter());
-    return rt;
-
   }
 
 

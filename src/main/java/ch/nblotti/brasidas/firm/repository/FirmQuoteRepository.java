@@ -11,6 +11,7 @@ import java.util.Collection;
 @RepositoryRestResource(path = "firmquotes")
 public interface FirmQuoteRepository extends PagingAndSortingRepository<FirmEODQuoteTO, Integer> {
 
+
   public Collection<FirmEODQuoteTO> findAllByDate(LocalDate date);
 
   public Collection<FirmEODQuoteTO> findByCodeOrderByDateAsc(String code);
