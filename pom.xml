@@ -9,7 +9,7 @@
   </parent>
   <groupId>ch.nblotti</groupId>
   <artifactId>brasidas</artifactId>
-  <version>0.0.38-SNAPSHOT</version>
+  <version>0.0.38</version>
   <name>brasidas</name>
   <description>Brasidas entry point</description>
 
@@ -26,7 +26,7 @@
     <url>https://github.com/nblotti/brasidas.git</url>
     <connection>scm:git:git://git@github.com/nblotti/brasidas.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/nblotti/brasidas.git</developerConnection>
-    <tag>brasidas-0.0.35</tag>
+    <tag>brasidas-0.0.38</tag>
   </scm>
 
 
