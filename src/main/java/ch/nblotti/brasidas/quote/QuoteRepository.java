@@ -51,7 +51,7 @@ public class QuoteRepository {
 
     while (!quotes.containsKey(localDate)) {
       localDate = localDate.minusDays(1);
-      if (localDate.equals(LocalDate.parse("01.01.1900", getDateTimeFormatter())))
+      if (localDate.equals(LocalDate.parse("1900-01-01", getDateTimeFormatter())))
         throw new IllegalStateException(String.format("No quotes found for symbol %s", symbol));
     }
     return quotes.get(localDate);
