@@ -24,7 +24,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/forex")
-public class FxController {
+public class FxQuoteController {
 
   @Autowired
   FXQuoteService fxQuoteService;
