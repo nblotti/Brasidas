@@ -1,13 +1,14 @@
 package ch.nblotti.brasidas.quote;
 
 
+import ch.nblotti.brasidas.fx.FXQuoteDTO;
+import ch.nblotti.brasidas.fx.FXQuoteService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -18,24 +19,15 @@ public class QuoteController {
   @Autowired
   QuoteService quoteService;
 
-
-  @Autowired
-  private DateTimeFormatter dateTimeFormatter;
-
-  DateTimeFormatter quoteDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-
   @GetMapping("/{exchange}/{symbol}")
-  public Iterable<QuoteDTO> getQuote(@PathVariable String exchange, @PathVariable String symbol) {
-
-
-    //on reformate la date
-    return quoteService.getQuotes(exchange, symbol).values().stream().map(i -> new QuoteDTO(dateTimeFormatter.format(quoteDateTimeFormatter.parse(i.getDate())), i.getOpen(), i.getHigh(), i.getLow(), i.getClose(), i.getAdjustedClose(), i.getVolume())).
-      collect(Collectors.toList());
-
-
+  public Map<LocalDate, QuoteDTO> getQuote(@PathVariable String exchange, @PathVariable String symbol) {
+    return quoteService.getQuotes(exchange, symbol);
   }
 
+  @GetMapping("/{exchange}/{symbol}/{date}")
+  public QuoteDTO getQuoteForDate(@PathVariable String exchange, @PathVariable String symbol, @PathVariable LocalDate date) {
+    return quoteService.getQuoteForDate(exchange, symbol, date);
+  }
 
 
 }

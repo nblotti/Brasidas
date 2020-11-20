@@ -29,13 +29,13 @@ public class FxQuoteController {
   @Autowired
   FXQuoteService fxQuoteService;
 
-  @GetMapping(value = "/currency")
-  public Map<LocalDate, FXQuoteDTO> getFXQuotes(@RequestParam String currencyPair) {
+  @GetMapping(value = "/{currencyPair}")
+  public Map<LocalDate, FXQuoteDTO> getFXQuotes(@PathVariable String currencyPair) {
     return fxQuoteService.getFXQuotes(currencyPair);
   }
 
-  @GetMapping(value = "/currenciesanddate")
-  public FXQuoteDTO getFXQuoteForDate(@RequestParam String firstCurrency, @RequestParam String secondCurrency, @RequestParam LocalDate date) {
+  @GetMapping(value = "/{firstCurrency}/{secondCurrency}/{date}")
+  public FXQuoteDTO getFXQuoteForDate(@PathVariable String firstCurrency, @PathVariable String secondCurrency, @PathVariable LocalDate date) {
     return fxQuoteService.getFXQuoteForDate(firstCurrency, secondCurrency, date);
   }
 
