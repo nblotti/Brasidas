@@ -62,6 +62,12 @@ public class FXQuoteRepository {
 
     }
 
+
+
+
+
+
+
     return cachedQuotes.get(currencyPair);
 
   }
@@ -104,7 +110,7 @@ public class FXQuoteRepository {
 
     while (!quotes.containsKey(localDate)) {
       localDate = localDate.minusDays(1);
-      if (localDate.equals(LocalDate.parse("01.01.1900", dateTimeFormatter)))
+      if (localDate.equals(LocalDate.parse("1900-01-01", dateTimeFormatter)))
         throw new IllegalStateException(String.format("No quotes found for symbol %s", currencyPair));
     }
     return quotes.get(localDate);
