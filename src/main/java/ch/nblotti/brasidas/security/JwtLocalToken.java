@@ -45,7 +45,7 @@ public class JwtLocalToken {
   private String jwtToken;
 
 
-  public String createJWT() {
+  public String createJWT() throws Exception {
 
 
     SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
@@ -95,7 +95,7 @@ public class JwtLocalToken {
   }
 
 
-  public String getJWT() {
+  public String getJWT() throws Exception {
 
     if (this.jwtToken == null || this.jwtToken.isEmpty())
       this.jwtToken = createJWT();
@@ -103,10 +103,10 @@ public class JwtLocalToken {
     return jwtToken;
   }
 
-  public void getNewJWT() {
+  public String getNewJWT() throws Exception {
 
     this.jwtToken = createJWT();
-
+    return jwtToken;
   }
 
 }

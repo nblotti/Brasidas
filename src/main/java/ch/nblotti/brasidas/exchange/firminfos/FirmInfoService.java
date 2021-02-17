@@ -31,7 +31,7 @@ public class FirmInfoService {
 
 
   @Value("${referential.firminfo.baseurl}")
-  public String firmhighlightStr;
+  public String firmInfoStr;
 
   @Autowired
   RestTemplate restTemplate;
@@ -114,7 +114,7 @@ public class FirmInfoService {
 
     HttpEntity<FirmInfoDTO> request = new HttpEntity<FirmInfoDTO>(firmInfoDTO);
 
-    FirmInfoDTO responseEntity = restTemplate.postForObject(firmhighlightStr, request, FirmInfoDTO.class);
+    FirmInfoDTO responseEntity = restTemplate.postForObject(firmInfoStr, request, FirmInfoDTO.class);
 
 
     return firmInfoDTO;
@@ -124,7 +124,7 @@ public class FirmInfoService {
 
     HttpEntity<List<FirmInfoDTO>> request = new HttpEntity<>(firmInfos);
 
-    FirmInfoDTO[] responseEntity = restTemplate.postForObject(firmhighlightStr, request, FirmInfoDTO[].class);
+    FirmInfoDTO[] responseEntity = restTemplate.postForObject(firmInfoStr, request, FirmInfoDTO[].class);
 
 
     return Arrays.asList(responseEntity.clone());

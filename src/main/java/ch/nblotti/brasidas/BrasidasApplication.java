@@ -6,7 +6,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.modelmapper.ModelMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,12 +19,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.format.Formatter;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -35,17 +32,18 @@ import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
 @PropertySource(value = "classpath:override.properties", ignoreResourceNotFound = true)
 public class BrasidasApplication {
+
+  private static final Logger logger = Logger.getLogger("BrasidasApplication");
 
   public static void main(String[] args) {
     SpringApplication.run(BrasidasApplication.class, args);
@@ -111,21 +109,37 @@ public class BrasidasApplication {
 
 
         String bearer = "";
-        ClientHttpResponse response;
+        ClientHttpResponse response = null;
 
         if (!httpRequest.getURI().getPath().contains("sharedKey") && !httpRequest.getURI().getPath().contains("login")) {
-          bearer = jwtLocalToken.getJWT();
+          while (bearer.isEmpty()) {
+            try {
+              bearer = jwtLocalToken.getJWT();
+            } catch (Exception exception) {
+              logger.severe("Error creating jwt token, retrying");
+              logger.severe(exception.getMessage());
+            }
+          }
           httpRequest.getHeaders().add(SecurityConstants.TOKEN_HEADER, bearer);
         }
 
-        response = clientHttpRequestExecution.execute(httpRequest, bytes);
+        try {
+          response = clientHttpRequestExecution.execute(httpRequest, bytes);
+        } catch (IOException exception) {
+          logger.severe("Error sending request, retrying");
+          logger.severe(exception.getMessage());
+        }
+        while (response == null || (HttpStatus.UNAUTHORIZED == response.getStatusCode() || HttpStatus.FORBIDDEN == response.getStatusCode())) {
+          try {
+            httpRequest.getHeaders().remove(SecurityConstants.TOKEN_HEADER);
+            bearer = jwtLocalToken.getNewJWT();
+            httpRequest.getHeaders().add(SecurityConstants.TOKEN_HEADER, bearer);
 
-        if (HttpStatus.UNAUTHORIZED == response.getStatusCode() || HttpStatus.FORBIDDEN == response.getStatusCode() ) {
-          httpRequest.getHeaders().remove(SecurityConstants.TOKEN_HEADER);
-          jwtLocalToken.getNewJWT();
-          httpRequest.getHeaders().add(SecurityConstants.TOKEN_HEADER, bearer);
-          return clientHttpRequestExecution.execute(httpRequest, bytes);
-
+            response = clientHttpRequestExecution.execute(httpRequest, bytes);
+          } catch (Exception exception) {
+            logger.severe("Error sending request, retrying");
+            logger.severe(exception.getMessage());
+          }
         }
 
         return response;

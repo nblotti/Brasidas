@@ -357,6 +357,7 @@ JpaDao jpaDao;
 
     for (FirmQuoteDTO firmEODQuoteTO : firms) {
 
+
       if (LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
         return;
 
