@@ -1,5 +1,6 @@
 package ch.nblotti.brasidas.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -25,9 +26,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 
-  @Value("${idp.validation.url}")
+  @Value("${zeus.validation.url}")
   public String idpValidationUrl;
 
+  @Autowired
+  private RestTemplate restTemplate;
 
   @Bean
   public HttpFirewall defaultHttpFirewall() {
@@ -46,12 +49,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     http.cors().and()
       .csrf().disable()
       .authorizeRequests()
-      .antMatchers("/sp500date.json").permitAll()
-      .antMatchers("/nasdaq.json").permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilter(jwtAuthorizationFilter())
-      // .addFilter(new JwtAuthorizationFilter(authenticationManager()))
       .sessionManagement()
       .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
   }
@@ -77,7 +77,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     return source;
   }
 
-  private JwtAuthorizationFilter jwtAuthorizationFilter()  throws Exception {
+  @Bean
+  public JwtAuthorizationFilter jwtAuthorizationFilter() throws Exception {
     return new JwtAuthorizationFilter(authenticationManagerBean(), idpValidationUrl);
   }
 

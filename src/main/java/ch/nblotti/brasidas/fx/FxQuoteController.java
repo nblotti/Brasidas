@@ -1,7 +1,6 @@
 package ch.nblotti.brasidas.fx;
 
 
-import ch.nblotti.brasidas.firm.FirmSearchDto;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.TypeRef;

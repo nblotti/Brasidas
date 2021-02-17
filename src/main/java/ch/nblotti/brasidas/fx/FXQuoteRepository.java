@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.fx;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -63,11 +64,6 @@ public class FXQuoteRepository {
     }
 
 
-
-
-
-
-
     return cachedQuotes.get(currencyPair);
 
   }
@@ -75,9 +71,11 @@ public class FXQuoteRepository {
 
   @Scheduled(fixedRate = 10800000)
   public void clearCache() {
-    cacheManager.getCache(QUOTES).clear();
-  }
+    Cache cache = cacheManager.getCache(QUOTES);
 
+    if (cache != null)
+      cache.clear();
+  }
 
 
   static final String QUOTES = "quotes";
