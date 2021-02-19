@@ -114,7 +114,7 @@ public class JwtLocalToken {
   }
 
 
-  public String getJWT() throws Exception {
+  public String getJWT()  {
 
     if (this.jwtToken == null || this.jwtToken.isEmpty())
       this.jwtToken = createJWT();
@@ -122,7 +122,7 @@ public class JwtLocalToken {
     return jwtToken;
   }
 
-  public String getNewJWT() throws Exception {
+  public String getNewJWT() {
 
     this.jwtToken = createJWT();
     return jwtToken;

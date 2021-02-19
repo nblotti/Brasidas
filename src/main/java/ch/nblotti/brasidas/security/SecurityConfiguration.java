@@ -49,6 +49,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     http.cors().and()
       .csrf().disable()
       .authorizeRequests()
+      .antMatchers("/ping").permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilter(jwtAuthorizationFilter())
