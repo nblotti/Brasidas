@@ -33,6 +33,8 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.guard.Guard;
 import org.springframework.util.ObjectUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -373,11 +375,10 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
       List<FirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(localDate, exchange);
 
 
-
       Iterable<FirmQuoteDTO> firmSaved = firmService.saveAllEODMarketQuotes(firmsForGivenExchange);
 
       if (Boolean.FALSE == runPartial)
-        loadDetails(firmsForGivenExchange, localDate, context);
+        loadDetails(exchange, firmsForGivenExchange, localDate, context);
 
       logger.info(String.format("%s - %s - End load process", exchange, localDate.format(format1)));
     }
@@ -416,13 +417,15 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
   }
 
 
-  private void loadDetails(Iterable<FirmQuoteDTO> firms, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+  private void loadDetails(String exchange, List<FirmQuoteDTO> firms, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
     List<FirmInfoDTO> firmInfos = new ArrayList<>();
     List<FirmValuationDTO> firmValuations = new ArrayList<>();
     List<FirmHighlightsDTO> firmHighlights = new ArrayList<>();
     List<FirmShareStatsDTO> firmSharesStats = new ArrayList<>();
 
+    double loop = 0;
+    double size = firms.size();
 
     for (FirmQuoteDTO firmEODQuoteTO : firms) {
 
@@ -450,6 +453,12 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
         if (shareStat.isPresent())
           firmSharesStats.add(shareStat.get());
       }
+      if (++loop != 0) {
+        double percentDone = (loop / size) * 100;
+        if (loop % 100 == 0)
+          logger.info(String.format("%s - %s%% done (%d on %d)", exchange, new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue(), (int)loop, (int)size));
+      }
+
     }
     try {
       FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
