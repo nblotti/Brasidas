@@ -390,7 +390,7 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
       @Override
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
-        List<LocalDate> runDates = (List<LocalDate>) context.getMessageHeader("runDate");
+        List<LocalDate> runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");
 
         LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
         LocalDateTime runTimeEnd = LocalDateTime.now();

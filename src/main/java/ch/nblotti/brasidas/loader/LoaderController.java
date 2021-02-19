@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.access.StateMachineAccess;
@@ -246,6 +247,13 @@ public class LoaderController {
 
     boolean result = sp500LoaderStateMachine.sendEvent(message);
 
+  }
+
+  @Scheduled(cron = "${loader.cron.expression}")
+  public void scheduleFixedDelayTask() {
+
+    LocalDate runDate = LocalDate.now().minusDays(1);
+    startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
   }
 
 
