@@ -47,8 +47,14 @@ public class FirmService {
   public List<FirmQuoteDTO> getExchangeDataForDate(LocalDate localDate, String exchange) {
     List<EODExchangeDTO> eodFirmQuoteDTOS = eODExchangeRepository.getExchangeDataByDate(localDate, exchange);
     List<FirmQuoteDTO> firmsTOs = eodFirmQuoteDTOS.stream().map(x -> modelMapper.map(x, FirmQuoteDTO.class)).collect(Collectors.toList());
-    firmsTOs.stream().forEach(x -> x.setActualExchange(exchange));
-    return firmsTOs;
+
+    List<FirmQuoteDTO> filtredFirmsTOs =firmsTOs.stream().map(firmQuoteDTO -> {
+       firmQuoteDTO.setActualExchange(exchange);
+       return firmQuoteDTO;
+    }).filter(y -> !y.getCode().startsWith("-")).collect(Collectors.toList());
+
+
+    return filtredFirmsTOs;
   }
 
 

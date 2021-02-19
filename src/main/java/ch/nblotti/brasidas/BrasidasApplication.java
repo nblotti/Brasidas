@@ -14,8 +14,11 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.format.Formatter;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
@@ -23,6 +26,8 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.statemachine.StateMachineSystemConstants;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -195,6 +200,4 @@ public class BrasidasApplication {
     }
     return ks;
   }
-
-
 }

@@ -2,20 +2,31 @@ package ch.nblotti.brasidas.loader;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.access.StateMachineAccess;
+import org.springframework.statemachine.access.StateMachineFunction;
+import org.springframework.statemachine.event.OnStateMachineError;
+import org.springframework.statemachine.listener.StateMachineListener;
+import org.springframework.statemachine.state.State;
+import org.springframework.statemachine.support.StateMachineInterceptorAdapter;
+import org.springframework.statemachine.transition.Transition;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +51,78 @@ public class LoaderController {
   @Autowired
   private BeanFactory beanFactory;
 
+  @Resource
+  private StateMachine<LOADER_STATES, LOADER_EVENTS> sp500LoaderStateMachine;
+
+
+  @PostConstruct
+  public void init() {
+
+    sp500LoaderStateMachine.addStateListener(new StateMachineListener<LOADER_STATES, LOADER_EVENTS>() {
+      @Override
+      public void stateChanged(State<LOADER_STATES, LOADER_EVENTS> state, State<LOADER_STATES, LOADER_EVENTS> state1) {
+
+      }
+
+      @Override
+      public void stateEntered(State<LOADER_STATES, LOADER_EVENTS> state) {
+
+      if (state == null)
+          logger.info(String.format("State Changed. entering  %s ", state.getId()));
+      }
+
+      @Override
+      public void stateExited(State<LOADER_STATES, LOADER_EVENTS> state) {
+
+        if (state == null)
+          logger.info(String.format("State Changed. exited  %s ", state.getId()));
+      }
+
+      @Override
+      public void eventNotAccepted(Message<LOADER_EVENTS> message) {
+
+      }
+
+      @Override
+      public void transition(Transition<LOADER_STATES, LOADER_EVENTS> transition) {
+
+      }
+
+      @Override
+      public void transitionStarted(Transition<LOADER_STATES, LOADER_EVENTS> transition) {
+
+      }
+
+      @Override
+      public void transitionEnded(Transition<LOADER_STATES, LOADER_EVENTS> transition) {
+
+      }
+
+      @Override
+      public void stateMachineStarted(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine) {
+      }
+
+      @Override
+      public void stateMachineStopped(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine) {
+
+      }
+      @Override
+      public void stateMachineError(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine, Exception e) {
+
+      }
+
+      @Override
+      public void extendedStateChanged(Object o, Object o1) {
+
+      }
+
+      @Override
+      public void stateContext(StateContext<LOADER_STATES, LOADER_EVENTS> stateContext) {
+
+      }
+    });
+    sp500LoaderStateMachine.start();
+  }
 
   @PostMapping(value = "/load")
   public void load(@RequestParam(name = "startyear", required = true) Integer startYear,
@@ -100,162 +183,68 @@ public class LoaderController {
   private void startLoad(Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay, Boolean runPartial) {
 
 
-    LoaderThread loaderThread = new LoaderThread(beanFactory, startYear, startMonth, startDay, endYear, endMonth, endDay, runPartial);
+    Message<LOADER_EVENTS> message;
+    List<LocalDate> localDates = new ArrayList<>();
 
-    ExecutorService executor = Executors.newSingleThreadExecutor();
-    executor.submit(loaderThread);
-    executor.shutdown();
-    try {
-      if (!executor.awaitTermination(3, TimeUnit.HOURS)) {
-        loaderThread.stopNow();
-        executor.shutdownNow();
-        logger.severe("Ending daily eod security loading- seems blocked");
+    int localStartDay;
+    if (startDay == null || startDay <= 0)
+      localStartDay = 1;
+    else
+      localStartDay = startDay;
 
-      }
-    } catch (InterruptedException e) {
-      logger.severe("Ending daily eod security loading");
-      logger.severe(e.getMessage());
-    } finally {
-      logger.info("Ending daily eod security loading");
-    }
-
-  }
-
-  @Scheduled(cron = "${loader.cron.expression}")
-  public void scheduleFixedDelayTask() {
-
-    LocalDate runDate = LocalDate.now().minusDays(1);
-    startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
-  }
-
-  class LoaderThread implements Runnable {
+    int localEndDay = LocalDate.of(endYear, endMonth, 1).with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
+    if (endDay <= localEndDay)
+      localEndDay = endDay;
 
 
-    private StateMachine<LOADER_STATES, LOADER_EVENTS> sp500LoaderStateMachine;
-    private final Logger logger = LoaderController.this.logger;
+    for (int year = startYear; year <= endYear; year++) {
 
-    private final BeanFactory beanFactory;
-    private final Integer startYear;
-    private final Integer startMonth;
-    private final Integer startDay;
-    private final Integer endYear;
-    private final Integer endMonth;
-    private final Integer endDay;
-    private final Boolean runPartial;
+      int loopstartMonth = 1;
+      int loopLastMonth = 12;
 
-    public LoaderThread(BeanFactory beanFactory, Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay, Boolean runPartial) {
-      this.beanFactory = beanFactory;
-      this.startYear = startYear;
-      this.startMonth = startMonth;
-      this.startDay = startDay;
-      this.endYear = endYear;
-      this.endMonth = endMonth;
-      this.endDay = endDay;
-      this.runPartial = runPartial;
-    }
+      if (year == endYear)
+        loopLastMonth = endMonth;
 
-    public LoaderThread(BeanFactory beanFactory, Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay) {
-      this(beanFactory, startYear, startMonth, startDay, endYear, endMonth, endDay, Boolean.TRUE);
-    }
+      if (year == startYear)
+        loopstartMonth = startMonth;
 
-    private void startLoadingProcess(LocalDate localDate, Message<LOADER_EVENTS> message) {
+      for (int month = loopstartMonth; month <= loopLastMonth; month++) {
+        LocalDate localDate = LocalDate.of(year, month, 1);
+        localDate = localDate.withDayOfMonth(localDate.lengthOfMonth());
 
-      long start = System.nanoTime();
-      sp500LoaderStateMachine = (StateMachine<LOADER_STATES, LOADER_EVENTS>) beanFactory.getBean("stateMachine");
-      sp500LoaderStateMachine.start();
-      boolean result = sp500LoaderStateMachine.sendEvent(message);
-      while (sp500LoaderStateMachine.getState().getId() != LOADER_STATES.DONE  && sp500LoaderStateMachine.getState().getId() != LOADER_STATES.ERROR)  {
-        try {
-          long temp = System.nanoTime();
-          long secs = TimeUnit.SECONDS.convert(temp - start, TimeUnit.NANOSECONDS);
-          logger.log(Level.INFO, String.format("%s - still running - temps : %s secondes", localDate, secs));
+        int loopLastDay = 1;
+        int loopStartDay = 1;
 
-          Thread.sleep(15000);
+        loopLastDay = localDate.with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
 
-        } catch (InterruptedException e) {
-          e.printStackTrace();
+        if (year >= endYear && month >= endMonth) {
+          loopLastDay = localEndDay;
         }
-      }
 
-      sp500LoaderStateMachine.stop();
+        if (year == startYear && month == startMonth) {
+          loopStartDay = localStartDay;
+        }
+        for (int day = loopStartDay; day <= loopLastDay; day++) {
+          LocalDate runDate = localDate.withDayOfMonth(day);
 
+          if (runDate.isAfter(LocalDate.now().minusDays(1)))
+            return;
 
-      long end = System.nanoTime();
-      long secs = TimeUnit.SECONDS.convert(end - start, TimeUnit.NANOSECONDS);
-
-      logger.log(Level.INFO, String.format("%s - %s - temps : %s secondes", localDate, result, secs));
-
-    }
-
-    public void stopNow() {
-      this.sp500LoaderStateMachine.sendEvent(LOADER_EVENTS.ERROR);
-    }
-
-    @Override
-    public void run() {
-
-
-      Message<LOADER_EVENTS> message;
-
-      int localStartDay;
-      if (startDay == null || startDay <= 0)
-        localStartDay = 1;
-      else
-        localStartDay = startDay;
-
-      int localEndDay = LocalDate.of(endYear, endMonth, 1).with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
-      if (endDay <= localEndDay)
-        localEndDay = endDay;
-
-
-      for (int year = startYear; year <= endYear; year++) {
-
-        int loopstartMonth = 1;
-        int loopLastMonth = 12;
-
-        if (year == endYear)
-          loopLastMonth = endMonth;
-
-        if (year == startYear)
-          loopstartMonth = startMonth;
-
-        for (int month = loopstartMonth; month <= loopLastMonth; month++) {
-          LocalDate localDate = LocalDate.of(year, month, 1);
-          localDate = localDate.withDayOfMonth(localDate.lengthOfMonth());
-
-          int loopLastDay = 1;
-          int loopStartDay = 1;
-
-          loopLastDay = localDate.with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
-
-          if (year >= endYear && month >= endMonth) {
-            loopLastDay = localEndDay;
-          }
-
-          if (year == startYear && month == startMonth) {
-            loopStartDay = localStartDay;
-          }
-          for (int day = loopStartDay; day <= loopLastDay; day++) {
-            LocalDate runDate = localDate.withDayOfMonth(day);
-
-            if (runDate.isAfter(LocalDate.now().minusDays(1)))
-              return;
-
-            message = MessageBuilder
-              .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
-              .setHeader("runDate", runDate)
-              .setHeader("runPartial", runPartial)
-              .build();
-
-            logger.log(Level.INFO, String.format("%s-%s-%s", year, month, day));
-            startLoadingProcess(runDate, message);
-          }
+          localDates.add(runDate);
 
 
         }
+
+
       }
     }
+    message = MessageBuilder
+      .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
+      .setHeader("runDate", localDates)
+      .setHeader("runPartial", runPartial)
+      .build();
 
+    boolean result = sp500LoaderStateMachine.sendEvent(message);
 
   }
 

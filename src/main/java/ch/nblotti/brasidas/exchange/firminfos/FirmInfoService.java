@@ -73,8 +73,8 @@ public class FirmInfoService {
         firmInfoDTO.setCode(eODFirmInfosDTO.getCode());
         firmInfoDTO.setName(eODFirmInfosDTO.getName());
         firmInfoDTO.setType(eODFirmInfosDTO.getType());
-        firmInfoDTO.setExchange(eODFirmInfosDTO.getExchange());
         firmInfoDTO.setCurrencyName(eODFirmInfosDTO.getCurrencyName());
+        firmInfoDTO.setCurrentExchange(eODFirmInfosDTO.getExchange());
         firmInfoDTO.setCurrencySymbol(eODFirmInfosDTO.getCurrencySymbol());
         firmInfoDTO.setCountryISO(eODFirmInfosDTO.getCountryISO());
         firmInfoDTO.setIsin(eODFirmInfosDTO.getISIN());

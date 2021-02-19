@@ -2,12 +2,20 @@ package ch.nblotti.brasidas.loader;
 
 public enum LOADER_STATES {
   READY,
+  WAITING_EVENT,
   GET_DATES,
+  LOAD_FORK,
+  LOAD,
   LOAD_NYSE,
+  LOAD_NYSE_END,
   LOAD_NASDAQ,
-  SAVE_FIRM,
+  LOAD_NASDAQ_END,
+  LOAD_JOIN,
+  CHOICE,
   LOAD_INDEX,
-  REFRESH_MAT_VIEWS,
+  LOAD_INDEX_END,
+  CLEANUP,
+  ERROR_STATE,
   ERROR,
   DONE;
 

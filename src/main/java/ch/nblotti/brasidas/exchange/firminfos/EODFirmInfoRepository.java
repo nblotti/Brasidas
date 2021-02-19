@@ -60,8 +60,9 @@ class EODFirmInfoRepository {
       if (isDelisted)
         return Optional.empty();
 
-      EODFirmInfosDTO EODFirmHighlightsDTO = jsonContext.read(infoStr, EODFirmInfosDTO.class);
-      return Optional.of(EODFirmHighlightsDTO);
+      EODFirmInfosDTO eODFirmHighlightsDTO = jsonContext.read(infoStr, EODFirmInfosDTO.class);
+      eODFirmHighlightsDTO.setExchange(exchange);
+      return Optional.of(eODFirmHighlightsDTO);
 
     } catch (Exception ex) {
       logger.log(Level.INFO, String.format("Error, mapping info for symbol %s \r\n%s", symbol, ex.getMessage()));
