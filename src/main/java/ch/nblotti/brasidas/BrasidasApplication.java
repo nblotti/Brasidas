@@ -142,12 +142,8 @@ public class BrasidasApplication {
 
             response = clientHttpRequestExecution.execute(httpRequest, bytes);
           } catch (Exception exception) {
-            logger.severe("Error sending request, waiting 15s and retrying");
-            try {
-              Thread.sleep(15000);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
+            logger.severe("Error sending request");
+
             logger.severe(exception.getMessage());
           }
         }

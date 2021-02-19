@@ -17,12 +17,16 @@ import java.security.Key;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.logging.Logger;
 
 @Component
 public class JwtLocalToken {
 
 
+  private static final Logger logger = Logger.getLogger("JwtLocalToken");
+
   private static final String ALGORITHM = "RSA";
+  public static final int RETRY_SLEEP_TIME_IN_MS = 30000;
 
 
   private RestTemplate restTemplate;
@@ -45,39 +49,54 @@ public class JwtLocalToken {
   private String jwtToken;
 
 
-  public String createJWT() throws Exception {
+  public String createJWT() {
+
+    String responseStr = new String();
+
+    while (responseStr.isEmpty()) {
+      try {
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+        long nowMillis = System.currentTimeMillis();
+        Date now = new Date(nowMillis);
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("applicationId", "local_brasidas");
 
 
-    SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
-    long nowMillis = System.currentTimeMillis();
-    Date now = new Date(nowMillis);
-
-    JSONObject jsonObject = new JSONObject();
-    jsonObject.put("applicationId", "local_brasidas");
-
-
-    //We will sign our JWT with our ApiKey secret
-    JwtBuilder builder = Jwts.builder()
-      .setIssuedAt(now)
-      .signWith(SignatureAlgorithm.RS512, key);
-    //Let's set the JWT Claims
-    Claims claimsIdentity = new DefaultClaims();
-    claimsIdentity.put("SHARED_KEY", getGeneratedString());
-
-    LocalDateTime ldt = LocalDateTime.now().plusSeconds(technicalExpiration);
-    Date exp = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-    claimsIdentity.setExpiration(exp);
-    builder.setClaims(claimsIdentity);
-    String token = builder.compact();
-
-    jsonObject.put("applicationId", "local_brasidas");
-
-    jsonObject.put("idTokenString", token);
+        //We will sign our JWT with our ApiKey secret
+        JwtBuilder builder = Jwts.builder()
+          .setIssuedAt(now)
+          .signWith(SignatureAlgorithm.RS512, key);
+        //Let's set the JWT Claims
+        Claims claimsIdentity = new DefaultClaims();
 
 
-    ResponseEntity<JSONObject> response = restTemplate.postForEntity(loginUrl, jsonObject, JSONObject.class);
-    String responseStr = String.format("Bearer %s", response.getBody().get("response").toString());
+        claimsIdentity.put("SHARED_KEY", getGeneratedString());
+
+        LocalDateTime ldt = LocalDateTime.now().plusSeconds(technicalExpiration);
+        Date exp = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+        claimsIdentity.setExpiration(exp);
+        builder.setClaims(claimsIdentity);
+        String token = builder.compact();
+
+        jsonObject.put("applicationId", "local_brasidas");
+
+        jsonObject.put("idTokenString", token);
+
+
+        ResponseEntity<JSONObject> response = restTemplate.postForEntity(loginUrl, jsonObject, JSONObject.class);
+        responseStr = String.format("Bearer %s", response.getBody().get("response").toString());
+      } catch (Exception ex) {
+        try {
+          logger.severe(String.format("Error creating JWT (technical login), retrying in 30s"));
+          Thread.sleep(RETRY_SLEEP_TIME_IN_MS);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
     return responseStr;
+
 
   }
 
