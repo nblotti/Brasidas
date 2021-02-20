@@ -1,91 +1,63 @@
   pipeline {
-    environment {
-    registry = "nblotti/brasidas"
-    registryCredential = 'dockerhub_id'
-    dockerImage = ''
-
-  }
     agent any
-    tools {
-    maven 'mvn3'
-    jdk 'jdk8'
-
-  }
     stages {
-
     stage ('Initialize') {
     steps {
     sh '''
     echo "PATH = ${PATH}"
     echo "M2_HOME = ${M2_HOME}"
     '''
-    }
-    }
+
+  }
+
+  }
     stage('Cloning our Git') {
     steps {
-    git 'git@github.com:nblotti/brasidas.git'
+    sh "git clone git@github.com:nblotti/brasidas.git brasidas"
 
   }
 
   }
     stage("Build & Deploy SNAPSHOT") {
     steps {
-    sh "mvn -B deploy"
+    sh "mvn -f ./brasidas/pom.xml -B deploy"
     }
     }
-
     stage("Release") {
     steps {
-    sh "mvn -B release:prepare"
-    sh "mvn -B release:perform"
+    sh "mvn -f ./brasidas/pom.xml -B release:prepare"
+    sh "mvn -f ./brasidas/pom.xml -B release:perform"
     script {
-  pom =    readMavenPom file: 'target/checkout/pom.xml'
+  pom =    readMavenPom file: './brasidas/target/checkout/pom.xml'
                                 version = pom.version
   }
-
-
-
-
   }
   }
-
     stage('Building our image') {
     steps{
     script {
-    dockerImage = docker.build(registry +":v"+"${version}", "./target")
-
+    sh   "cd brasidas/target/; docker build -t nblotti/brasidas:v${version} ."
+  }
+  }
   }
 
-  }
-
-  }
     stage('Deploy our image') {
     steps{
-    script {
-    docker.withRegistry( '', registryCredential ) {
-    dockerImage.push()
-
+    sh   "docker push nblotti/brasidas:v${version}"
+  }
   }
 
-  }
-
-  }
-
-  }
     stage('Kube deploy') {
     steps{
-    sh "kubectl set image deployment/nblotti-asset nblotti=nblotti/brasidas:v${version} --record"
-
+    sh "kubectl set image deployment/nblotti-brasidas nblotti=nblotti/brasidas:v${version} --record"
   }
-
   }
     stage('Cleaning up') {
     steps{
-    sh "docker rmi $registry:v" +"${version}"
-
+    sh "docker rmi -f \$(docker images -a -q)"
+  }
   }
 
-  }
   }
     post {
     always {
@@ -93,4 +65,5 @@
 
   }
   }
+
   }
