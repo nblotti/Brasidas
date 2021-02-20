@@ -16,15 +16,15 @@ spec:
     spec:
       containers:
         - name: nblotti
-          image: nblotti/brasidas:v0.0.44
+          image: nblotti/brasidas:v0.0.47
           ports:
             - containerPort: 8080
           livenessProbe:
             httpGet:
               path: /ping
               port: 8080
-            initialDelaySeconds: 30
-            failureThreshold: 30
-            periodSeconds: 10
+            initialDelaySeconds: 10
+            failureThreshold: 6
+            periodSeconds: 3600
       imagePullSecrets:
         - name: regcred

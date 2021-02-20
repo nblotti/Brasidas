@@ -131,8 +131,12 @@ public class BrasidasApplication {
         try {
           response = clientHttpRequestExecution.execute(httpRequest, bytes);
         } catch (IOException exception) {
-          logger.severe("Error sending request, retrying");
-          logger.severe(exception.getMessage());
+          try{
+          logger.severe("Error sending request, retrying in 30s");
+            Thread.sleep(30000);
+          } catch (InterruptedException e) {
+            logger.severe("Sleep time interrupted have not waited 30s before retry");
+          }
         }
         while (response == null || (HttpStatus.UNAUTHORIZED == response.getStatusCode() || HttpStatus.FORBIDDEN == response.getStatusCode())) {
           try {
