@@ -11,7 +11,6 @@ import ch.nblotti.brasidas.exchange.firmsharestats.FirmShareStatsDTO;
 import ch.nblotti.brasidas.exchange.firmsharestats.FirmSharesStatsService;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationDTO;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationService;
-import ch.nblotti.brasidas.index.composition.IndexCompositionDTO;
 import ch.nblotti.brasidas.index.composition.IndexCompositionService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +34,14 @@ import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 @Configuration
@@ -117,12 +118,7 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
       .withStates()
       .parent(LOADER_STATES.LOAD)
       .initial(LOADER_STATES.LOAD_NASDAQ, loadNASDAQ())
-      .end(LOADER_STATES.LOAD_NASDAQ_END)
-      .and()
-      .withStates()
-      .parent(LOADER_STATES.LOAD)
-      .initial(LOADER_STATES.LOAD_INDEX, loadIndex())
-      .end(LOADER_STATES.LOAD_INDEX_END);
+      .end(LOADER_STATES.LOAD_NASDAQ_END);
 
 
   }
@@ -150,9 +146,6 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
       .and()
       .withExternal()
       .source(LOADER_STATES.LOAD_NYSE).target(LOADER_STATES.LOAD_NYSE_END)
-      .and()
-      .withExternal()
-      .source(LOADER_STATES.LOAD_INDEX).target(LOADER_STATES.LOAD_INDEX_END)
       .and()
       .withJoin()
       .source(LOADER_STATES.LOAD).target(LOADER_STATES.LOAD_JOIN)
@@ -188,8 +181,6 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
       @Override
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
-        context.getExtendedState().getVariables().put("runDate", Arrays.asList(LocalDate.now().minusDays(1)));
-        context.getExtendedState().getVariables().put("runPartial", Boolean.TRUE);
         context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
 
       }
@@ -206,37 +197,16 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
 
         Message<LOADER_EVENTS> message;
 
-        List<LocalDate> runDates = (List<LocalDate>) context.getMessageHeader("runDate");
-
-
-        if (runDates.isEmpty())
-          runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");
-
+        LocalDate runDate = (LocalDate) context.getMessageHeader("runDate");
         Boolean runPartial = (Boolean) context.getMessageHeader("runPartial");
 
-        if (runPartial == null)
-          runPartial = (Boolean) context.getExtendedState().getVariables().get("runPartial");
-        else
-          context.getExtendedState().getVariables().put("runPartial", runPartial);
 
-
-        List<LocalDate> actualRunDates = new ArrayList<>();
-
-        for (LocalDate currentDate : runDates) {
-          if (currentDate.getDayOfWeek() != DayOfWeek.SATURDAY
-            && currentDate.getDayOfWeek() != DayOfWeek.SUNDAY
-            && !wasDayBeforeRunDateDayDayOff(currentDate)) {
-
-            actualRunDates.add(currentDate);
-          }
-        }
-
-        if (actualRunDates.isEmpty()) {
+        if (runDate == null) {
           message = MessageBuilder
             .withPayload(LOADER_EVENTS.ERROR)
             .build();
         } else {
-          context.getExtendedState().getVariables().put("runDate", actualRunDates);
+          context.getExtendedState().getVariables().put("runDate", runDate);
 
           message = MessageBuilder
             .withPayload(LOADER_EVENTS.SUCCESS)
@@ -250,11 +220,6 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
 
   private String[] getIndexList() {
     return indexList.split(",");
-  }
-
-
-  private boolean wasDayBeforeRunDateDayDayOff(LocalDate runDate) {
-    return false;
   }
 
 
@@ -299,42 +264,6 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
 
   }
 
-
-  @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> loadIndex() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
-
-      @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> stateContext) {
-
-        Map<Object, Object> variables = stateContext.getExtendedState().getVariables();
-
-        try {
-          IndexCompositionService indexCompositionService = beanFactory.getBean(IndexCompositionService.class);
-          List<LocalDate> runDates = (List<LocalDate>) stateContext.getExtendedState().getVariables().get("runDate");
-
-          for (LocalDate runDate : runDates) {
-            if (runDate.getDayOfMonth() != 1)
-              continue;
-
-            String[] indexes = getIndexList();
-            for (String index : indexes) {
-              List<IndexCompositionDTO> indexQuoteTO = indexCompositionService.getIndexDataByDate(runDate, index);
-              indexCompositionService.saveIndexComposition(indexQuoteTO);
-            }
-          }
-        } catch (Exception ex) {
-          variables.put("T3", false);
-          return;
-        }
-        variables.put("T3", true);
-      }
-    }
-
-      ;
-  }
-
-
   @Bean
   public Guard<LOADER_STATES, LOADER_EVENTS> tasksChoiceGuard() {
     return new Guard<LOADER_STATES, LOADER_EVENTS>() {
@@ -366,22 +295,20 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
 
 
     FirmService firmService = beanFactory.getBean(FirmService.class);
-    List<LocalDate> runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");
+    LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
 
     Boolean runPartial = (Boolean) context.getExtendedState().getVariables().get("runPartial");
 
-    for (LocalDate localDate : runDates) {
-      logger.info(String.format("%s - %s - Starting load process", exchange, localDate.format(format1)));
-      List<FirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(localDate, exchange);
+    logger.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
+    List<FirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
 
 
-      Iterable<FirmQuoteDTO> firmSaved = firmService.saveAllEODMarketQuotes(firmsForGivenExchange);
+    Iterable<FirmQuoteDTO> firmSaved = firmService.saveAllEODMarketQuotes(firmsForGivenExchange);
 
-      if (Boolean.FALSE == runPartial)
-        loadDetails(exchange, firmsForGivenExchange, localDate, context);
+    if (Boolean.FALSE == runPartial)
+      loadDetails(exchange, firmsForGivenExchange, runDate, context);
 
-      logger.info(String.format("%s - %s - End load process", exchange, localDate.format(format1)));
-    }
+    logger.info(String.format("%s - %s - End load process", exchange, runDate.format(format1)));
   }
 
   @Bean
@@ -456,7 +383,7 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
       if (++loop != 0) {
         double percentDone = (loop / size) * 100;
         if (loop % 100 == 0)
-          logger.info(String.format("%s - %s%% done (%d on %d)", exchange, new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue(), (int)loop, (int)size));
+          logger.info(String.format("%s - %s%% done (%d on %d)", exchange, new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue(), (int) loop, (int) size));
       }
 
     }

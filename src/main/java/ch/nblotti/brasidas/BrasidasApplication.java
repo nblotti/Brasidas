@@ -99,14 +99,13 @@ public class BrasidasApplication {
       .setReadTimeout(Duration.ofMinutes(5))
       .build();
 
-    restTemplate.setInterceptors(Arrays.asList(interceptor(restTemplate, jwtLocalToken)));
+    restTemplate.setInterceptors(Arrays.asList(interceptor(jwtLocalToken)));
     return restTemplate;
   }
 
   @Bean
-  ClientHttpRequestInterceptor interceptor(RestTemplate restTemplate, JwtLocalToken jwtLocalToken) {
+  ClientHttpRequestInterceptor interceptor(JwtLocalToken jwtLocalToken) {
 
-    jwtLocalToken.setRestTemplate(restTemplate);
     ClientHttpRequestInterceptor clientHttpRequestInterceptor = new ClientHttpRequestInterceptor() {
 
       @Override

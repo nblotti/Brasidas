@@ -1,20 +1,18 @@
 package ch.nblotti.brasidas.loader;
 
+import ch.nblotti.brasidas.configuration.ConfigDTO;
+import ch.nblotti.brasidas.configuration.ConfigService;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import net.minidev.json.JSONArray;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.StateMachine;
-import org.springframework.statemachine.access.StateMachineAccess;
-import org.springframework.statemachine.access.StateMachineFunction;
-import org.springframework.statemachine.event.OnStateMachineError;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.state.State;
-import org.springframework.statemachine.support.StateMachineInterceptorAdapter;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,14 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -41,6 +39,11 @@ public class LoaderController {
   private static final Logger logger = Logger.getLogger("LoaderController");
 
   private static final int WORKER_THREAD_POOL = 1;
+  public static final String LOADER = "LOADER";
+  public static final String RUNNING_JOBS = "RUNNING_JOBS";
+
+  @Autowired
+  private ConfigService configService;
 
   @Autowired
   private DateTimeFormatter format1;
@@ -51,6 +54,11 @@ public class LoaderController {
 
   @Autowired
   private BeanFactory beanFactory;
+
+
+  public String runningSatusStr = "$..status";
+  public String runningDateStr = "$..date";
+  public String runningPartialStr = "$..partial";
 
   @Resource
   private StateMachine<LOADER_STATES, LOADER_EVENTS> sp500LoaderStateMachine;
@@ -68,7 +76,7 @@ public class LoaderController {
       @Override
       public void stateEntered(State<LOADER_STATES, LOADER_EVENTS> state) {
 
-      if (state == null)
+        if (state == null)
           logger.info(String.format("State Changed. entering  %s ", state.getId()));
       }
 
@@ -107,6 +115,7 @@ public class LoaderController {
       public void stateMachineStopped(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine) {
 
       }
+
       @Override
       public void stateMachineError(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine, Exception e) {
 
@@ -236,25 +245,129 @@ public class LoaderController {
 
         }
 
+        List<ConfigDTO> configDTOS = localDates.stream().filter(current -> {
+            if (current.getDayOfWeek() != DayOfWeek.SATURDAY
+              && current.getDayOfWeek() != DayOfWeek.SUNDAY
+              && !wasDayBeforeRunDateDayDayOff(current)
+              && !isApiCallToElevated())
+              return true;
+            return false;
+          }
+        ).map(filtred -> {
 
+          ConfigDTO configDTO = new ConfigDTO();
+          configDTO.setCode(LOADER);
+          configDTO.setType(RUNNING_JOBS);
+          configDTO.setValue(String.format("{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\"}", filtred.format(format1), runPartial, "NOT_STARTED"));
+          return configDTO;
+
+        }).collect(Collectors.toList());
+
+        configService.saveAll(configDTOS);
       }
     }
-    message = MessageBuilder
+  }
+
+  /*  message = MessageBuilder
       .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
       .setHeader("runDate", localDates)
       .setHeader("runPartial", runPartial)
       .build();
 
     boolean result = sp500LoaderStateMachine.sendEvent(message);
+*/
 
-  }
-
-  @Scheduled(cron = "${loader.cron.expression}")
-  public void scheduleFixedDelayTask() {
+  @Scheduled(cron = "${loader.daily.cron.expression}")
+  public void scheduleDailyTask() {
 
     LocalDate runDate = LocalDate.now().minusDays(1);
     startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
   }
 
+  @Scheduled(cron = "${loader.recurring.cron.expression}")
+  public void scheduleRecurringDelayTask() {
+
+    List<ConfigDTO> configDTOS = configService.getAll(LOADER, RUNNING_JOBS);
+
+    if (isJobRunning(configDTOS))
+      return;
+
+    List<ConfigDTO> errored = getJobErrored(configDTOS);
+    if (!errored.isEmpty()) {
+      errored.stream().forEach(configDTO -> cleanup(configDTO));
+
+      errored.stream().forEach(configDTO -> {
+
+        LocalDate runDate = parseDate(configDTO);
+
+        if (runDate == null)
+          return;
+
+        startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
+
+      });
+      return;
+    }
+  }
+
+  private void cleanup(ConfigDTO configDTO) {
+  }
+
+  private List<ConfigDTO> getJobErrored(List<ConfigDTO> configDTOS) {
+
+    return configDTOS.stream().filter(configDTO -> {
+
+      return isInGivenStatus(configDTO, "ERRORED");
+    }).collect(Collectors.toList());
+
+  }
+
+  private boolean isJobRunning(List<ConfigDTO> configDTOS) {
+
+
+    List<ConfigDTO> running = configDTOS.stream().filter(configDTO -> {
+
+      return isInGivenStatus(configDTO, "RUNNING");
+    }).collect(Collectors.toList());
+
+    return !running.isEmpty();
+  }
+
+  private boolean isInGivenStatus(ConfigDTO configDTO, String status) {
+    DocumentContext content = JsonPath.parse(configDTO.getValue());
+    JSONArray json = content.read(runningSatusStr);
+
+    String type = json.get(0).toString();
+
+    if (type != null && type.contains(status))
+      return true;
+    return false;
+  }
+
+  private LocalDate parseDate(ConfigDTO configDTO) {
+    DocumentContext content = JsonPath.parse(configDTO.getValue());
+    JSONArray json = content.read(runningDateStr);
+    String type = json.get(0).toString();
+    if (type != null)
+      return LocalDate.parse(type, format1);
+    return null;
+  }
+
+  private boolean isPartial(ConfigDTO configDTO) {
+    DocumentContext content = JsonPath.parse(configDTO.getValue());
+    JSONArray json = content.read(runningPartialStr);
+    String type = json.get(0).toString();
+    if (type != null && type.compareToIgnoreCase("true") == 0)
+      return true;
+    return false;
+  }
+
+  private boolean wasDayBeforeRunDateDayDayOff(LocalDate runDate) {
+    return false;
+  }
+
+  private boolean isApiCallToElevated() {
+    return false;
+  }
 
 }

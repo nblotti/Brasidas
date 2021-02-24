@@ -29,8 +29,6 @@ public class JwtLocalToken {
   public static final int RETRY_SLEEP_TIME_IN_MS = 30000;
 
 
-  private RestTemplate restTemplate;
-
   @Value("${zeus.sharedkey.url}")
   private String sharedkeyUrl;
 
@@ -83,7 +81,7 @@ public class JwtLocalToken {
 
         jsonObject.put("idTokenString", token);
 
-
+        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<JSONObject> response = restTemplate.postForEntity(loginUrl, jsonObject, JSONObject.class);
         responseStr = String.format("Bearer %s", response.getBody().get("response").toString());
       } catch (Exception ex) {
@@ -103,14 +101,10 @@ public class JwtLocalToken {
 
   private String getGeneratedString() {
 
-
+    RestTemplate restTemplate = new RestTemplate();
     ResponseEntity<String> response = restTemplate.getForEntity(sharedkeyUrl, String.class);
 
     return response.getBody();
-  }
-
-  public void setRestTemplate(RestTemplate restTemplate) {
-    this.restTemplate = restTemplate;
   }
 
 
