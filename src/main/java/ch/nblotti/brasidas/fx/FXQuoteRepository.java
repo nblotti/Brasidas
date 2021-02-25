@@ -29,11 +29,11 @@ public class FXQuoteRepository {
   @Autowired
   private CacheManager cacheManager;
 
-  @Autowired
-  private DateTimeFormatter quoteDateTimeFormatter;
+  @Autowired()
+  private DateTimeFormatter format1;
 
   @Autowired
-  private DateTimeFormatter dateTimeFormatter;
+  private DateTimeFormatter formatMessage;
 
 
   @Value("${spring.application.eod.api.key}")
@@ -56,7 +56,7 @@ public class FXQuoteRepository {
       List<FXQuoteDTO> quotes = Arrays.asList(responseEntity.getBody());
 
       Map<LocalDate, FXQuoteDTO> quotesByDate = new HashMap<>();
-      quotes.forEach(k -> quotesByDate.put(LocalDate.parse(k.getDate(), quoteDateTimeFormatter), k));
+      quotes.forEach(k -> quotesByDate.put(LocalDate.parse(k.getDate(), format1), k));
 
       cachedQuotes.put(currencyPair, quotesByDate);
       cacheManager.getCache(QUOTES).put(FOREX, cachedQuotes);
@@ -96,7 +96,7 @@ public class FXQuoteRepository {
       FXQuoteDTO.setLow("1");
       FXQuoteDTO.setOpen("1");
       FXQuoteDTO.setVolume("0");
-      FXQuoteDTO.setDate(date.format(quoteDateTimeFormatter));
+      FXQuoteDTO.setDate(date.format(format1));
       return FXQuoteDTO;
 
     } else {
@@ -108,7 +108,7 @@ public class FXQuoteRepository {
 
     while (!quotes.containsKey(localDate)) {
       localDate = localDate.minusDays(1);
-      if (localDate.equals(LocalDate.parse("1900-01-01", dateTimeFormatter)))
+      if (localDate.equals(LocalDate.parse("1900-01-01", formatMessage)))
         throw new IllegalStateException(String.format("No quotes found for symbol %s", currencyPair));
     }
     return quotes.get(localDate);

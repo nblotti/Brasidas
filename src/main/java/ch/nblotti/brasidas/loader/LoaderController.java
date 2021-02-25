@@ -7,6 +7,7 @@ import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.statemachine.StateContext;
@@ -23,7 +24,9 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,7 @@ public class LoaderController {
   private static final int WORKER_THREAD_POOL = 1;
   public static final String LOADER = "LOADER";
   public static final String RUNNING_JOBS = "RUNNING_JOBS";
+  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\"}";
 
   @Autowired
   private ConfigService configService;
@@ -58,10 +62,14 @@ public class LoaderController {
 
   public String runningSatusStr = "$..status";
   public String runningDateStr = "$..date";
+  public String updatedDateStr = "$..updated";
   public String runningPartialStr = "$..partial";
 
   @Resource
   private StateMachine<LOADER_STATES, LOADER_EVENTS> sp500LoaderStateMachine;
+
+  @Value("${loader.job.max.running.time}")
+  private long maxRunningTime;
 
 
   @PostConstruct
@@ -258,7 +266,7 @@ public class LoaderController {
           ConfigDTO configDTO = new ConfigDTO();
           configDTO.setCode(LOADER);
           configDTO.setType(RUNNING_JOBS);
-          configDTO.setValue(String.format("{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\"}", filtred.format(format1), runPartial, "NOT_STARTED"));
+          configDTO.setValue(String.format(CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage)));
           return configDTO;
 
         }).collect(Collectors.toList());
@@ -289,57 +297,72 @@ public class LoaderController {
 
     List<ConfigDTO> configDTOS = configService.getAll(LOADER, RUNNING_JOBS);
 
-    if (isJobRunning(configDTOS))
-      return;
-
-    List<ConfigDTO> errored = getJobErrored(configDTOS);
-    if (!errored.isEmpty()) {
-      errored.stream().forEach(configDTO -> cleanup(configDTO));
-
-      errored.stream().forEach(configDTO -> {
-
-        LocalDate runDate = parseDate(configDTO);
-
-        if (runDate == null)
-          return;
-
-        startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
+    List<ConfigDTO> running = getJobsInGivenStatus(configDTOS, JobStatus.RUNNING);
+    if (!running.isEmpty()) {
+      running.stream().forEach(current -> {
+        if (isHanging(current)) {
+          current.setValue(String.format(CONFIG_DTO_VALUE_STR, parseDate(current).format(format1), isPartial(current), JobStatus.ERROR, LocalDateTime.now().format(formatMessage)));
+          configService.save(current);
+        }
 
       });
       return;
     }
+
+    List<ConfigDTO> errored = getJobsInGivenStatus(configDTOS, JobStatus.ERROR);
+    if (!errored.isEmpty()) {
+      errored.stream().forEach(configDTO -> cleanup(configDTO));
+
+      errored.stream().forEach(current -> {
+
+        LocalDate runDate = parseDate(current);
+
+        current.setValue(String.format(CONFIG_DTO_VALUE_STR, parseDate(current).format(format1), isPartial(current), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage)));
+        configService.save(current);
+
+      });
+      return;
+    }
+    List<ConfigDTO> toRun = getJobsInGivenStatus(configDTOS, JobStatus.SCHEDULED);
+    if (toRun.isEmpty())
+      return;
+
+    ConfigDTO current = toRun.iterator().next();
+    current.setValue(String.format(CONFIG_DTO_VALUE_STR, parseDate(current).format(format1), isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
+    configService.save(current);
+
   }
+
+  private boolean isHanging(ConfigDTO current) {
+
+    LocalDateTime lateUpdate = parseUpdatedDate(current);
+    LocalDateTime now = LocalDateTime.now();
+    long minutes = ChronoUnit.MINUTES.between(lateUpdate, now);
+
+    return minutes >= maxRunningTime;
+  }
+
 
   private void cleanup(ConfigDTO configDTO) {
   }
 
-  private List<ConfigDTO> getJobErrored(List<ConfigDTO> configDTOS) {
+  private List<ConfigDTO> getJobsInGivenStatus(List<ConfigDTO> configDTOS, JobStatus status) {
 
     return configDTOS.stream().filter(configDTO -> {
 
-      return isInGivenStatus(configDTO, "ERRORED");
+      return isInGivenStatus(configDTO, status);
     }).collect(Collectors.toList());
 
   }
 
-  private boolean isJobRunning(List<ConfigDTO> configDTOS) {
 
-
-    List<ConfigDTO> running = configDTOS.stream().filter(configDTO -> {
-
-      return isInGivenStatus(configDTO, "RUNNING");
-    }).collect(Collectors.toList());
-
-    return !running.isEmpty();
-  }
-
-  private boolean isInGivenStatus(ConfigDTO configDTO, String status) {
+  private boolean isInGivenStatus(ConfigDTO configDTO, JobStatus status) {
     DocumentContext content = JsonPath.parse(configDTO.getValue());
     JSONArray json = content.read(runningSatusStr);
 
     String type = json.get(0).toString();
 
-    if (type != null && type.contains(status))
+    if (type != null && type.contains(status.toString()))
       return true;
     return false;
   }
@@ -350,6 +373,15 @@ public class LoaderController {
     String type = json.get(0).toString();
     if (type != null)
       return LocalDate.parse(type, format1);
+    return null;
+  }
+
+  private LocalDateTime parseUpdatedDate(ConfigDTO configDTO) {
+    DocumentContext content = JsonPath.parse(configDTO.getValue());
+    JSONArray json = content.read(updatedDateStr);
+    String type = json.get(0).toString();
+    if (type != null)
+      return LocalDateTime.parse(type, formatMessage);
     return null;
   }
 

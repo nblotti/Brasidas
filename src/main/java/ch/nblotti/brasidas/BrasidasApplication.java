@@ -60,6 +60,8 @@ public class BrasidasApplication {
   @Value("${global.date-format}")
   public String dateFormat;
 
+  @Value("${global.full-date-format}")
+  public String messageDateFormat;
 
   @Value("${keystore.location}")
   private Resource keystoreLocation;
@@ -164,6 +166,11 @@ public class BrasidasApplication {
     return DateTimeFormatter.ofPattern(dateFormat);
   }
 
+
+  @Bean
+  public DateTimeFormatter formatMessage() {
+    return DateTimeFormatter.ofPattern(messageDateFormat);
+  }
 
   @Bean
   public MessageConverter jsonMessageConverter() {
