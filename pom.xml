@@ -9,7 +9,7 @@
   </parent>
   <groupId>ch.nblotti</groupId>
   <artifactId>brasidas</artifactId>
-  <version>0.0.51-SNAPSHOT</version>
+  <version>0.0.52-SNAPSHOT</version>
   <name>brasidas</name>
   <description>Brasidas entry point</description>
 
