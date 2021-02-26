@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +39,9 @@ public class FirmValuationService {
 
   @Autowired
   protected ModelMapper modelMapper;
+
+  @Autowired
+  DateTimeFormatter format1;
 
 
   public Optional<FirmValuationDTO> getValuationByDateAndFirm(LocalDate runDate, String exchange, String symbol) {
@@ -97,5 +101,6 @@ public class FirmValuationService {
     }
 
   public void deleteByDate(LocalDate runDate) {
+    restTemplate.delete(String.format("%s?localDate=%s",firmValuationStr, runDate.format(format1)));
   }
 }

@@ -91,4 +91,7 @@ public class FirmService {
   }
 
 
+    public void deleteByDate(LocalDate runDate) {
+      restTemplate.delete(String.format("%s?localDate=%s",firmQuoteStr, runDate.format(format1)));
+    }
 }

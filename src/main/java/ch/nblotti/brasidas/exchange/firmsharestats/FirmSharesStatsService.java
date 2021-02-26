@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +40,9 @@ public class FirmSharesStatsService {
 
   @Autowired
   private EODFirmSharesStatsRepository eodFirmSharesStatsRepository;
+
+  @Autowired
+  DateTimeFormatter format1;
 
 
   public Optional<FirmShareStatsDTO> getSharesStatByDateAndFirm(LocalDate runDate, String exchange, String symbol) {
@@ -101,5 +105,6 @@ public class FirmSharesStatsService {
   }
 
     public void deleteByDate(LocalDate runDate) {
+      restTemplate.delete(String.format("%s?localDate=%s",firmShareStatsStr, runDate.format(format1)));
     }
 }

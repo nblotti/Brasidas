@@ -228,21 +228,13 @@ public class LoaderService {
 
         }).collect(Collectors.toList());
 
-       // configService.saveAll(configDTOS);
+        configService.saveAll(configDTOS);
       }
     }
   }
 
-  /*  message = MessageBuilder
-      .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
-      .setHeader("runDate", localDates)
-      .setHeader("runPartial", runPartial)
-      .build();
 
-    boolean result = sp500LoaderStateMachine.sendEvent(message);
-*/
-
-  //@Scheduled(cron = "${loader.daily.cron.expression}")
+  @Scheduled(cron = "${loader.daily.cron.expression}")
   @Transactional
   public void scheduleDailyTask() {
 
@@ -250,7 +242,7 @@ public class LoaderService {
     startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
   }
 
-  //@Scheduled(cron = "${loader.recurring.cron.expression}")
+  @Scheduled(cron = "${loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
 
     List<ConfigDTO> configDTOS = configService.getAll(LOADER, RUNNING_JOBS);
@@ -295,8 +287,15 @@ public class LoaderService {
       return;
 
     ConfigDTO current = toRun.iterator().next();
-    current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
-    configService.update(current);
+
+    LocalDate runDate = configService.parseDate(current);
+    Message<LOADER_EVENTS> message = MessageBuilder
+      .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
+      .setHeader("runDate", runDate)
+      .setHeader("loadId", current.getId())
+      .build();
+
+    marketLoaderStateMachine.sendEvent(message);
 
   }
 

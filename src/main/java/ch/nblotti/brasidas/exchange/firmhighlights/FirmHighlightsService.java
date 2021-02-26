@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,9 @@ public class FirmHighlightsService {
 
   @Autowired
   protected ModelMapper modelMapper;
+
+  @Autowired
+  DateTimeFormatter format1;
 
 
   public Optional<FirmHighlightsDTO> getHighlightsByDateAndFirm(LocalDate runDate, String exchange, String symbol) {
@@ -121,5 +125,6 @@ public class FirmHighlightsService {
   }
 
   public void deleteByDate(LocalDate runDate) {
+    restTemplate.delete(String.format("%s?localDate=%s",firmHighlightStr, runDate.format(format1)));
   }
 }

@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.ConfigService;
+import ch.nblotti.brasidas.exchange.firm.FirmService;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsService;
 import ch.nblotti.brasidas.exchange.firminfos.FirmInfoService;
 import ch.nblotti.brasidas.exchange.firmsharestats.FirmSharesStatsService;
@@ -121,7 +122,11 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
       .source(CLEANUP_STATES.ERROR_STATE).target(CLEANUP_STATES.CANCELED).event(CLEANUP_EVENTS.ERROR)
       .and()
       .withExternal()
-      .source(CLEANUP_STATES.CANCELED).target(CLEANUP_STATES.WAITING_EVENT);
+      .source(CLEANUP_STATES.CANCELED).target(CLEANUP_STATES.WAITING_EVENT)
+      .and()
+      .withExternal()
+      .source(CLEANUP_STATES.DONE).target(CLEANUP_STATES.WAITING_EVENT);
+
 
     ;
   }
@@ -168,10 +173,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
         LocalDate runDate = (LocalDate) stateContext.getExtendedState().getVariables().get("runDate");
         Long id = (Long) stateContext.getExtendedState().getVariables().get("erroredId");
 
-        ConfigDTO erroredConfig = configService.findById(id);
+        ConfigDTO errored = configService.findById(id);
 
 
-        if (erroredConfig == null || !configService.isInGivenStatus(erroredConfig, JobStatus.ERROR)) {
+        if (errored == null || !configService.isInGivenStatus(errored, JobStatus.ERROR)) {
           message = MessageBuilder
             .withPayload(CLEANUP_EVENTS.ERROR)
             .build();
@@ -180,6 +185,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
 
 
           try {
+
+
+            FirmService firmService = beanFactory.getBean(FirmService.class);
+            firmService.deleteByDate(runDate);
 
             FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
             firmInfoService.deleteByDate(runDate);
@@ -192,6 +201,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
 
             FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
             firmHighlightsService.deleteByDate(runDate);
+
+
+            errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage)));
+            configService.save(errored);
 
 
             message = MessageBuilder
@@ -221,34 +234,21 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
         Long id = (Long) context.getExtendedState().getVariables().get("erroredId");
         ConfigDTO errored = configService.findById(id);
 
-        if (errored == null || !configService.isInGivenStatus(errored, JobStatus.ERROR)) {
-          errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage)));
-          configService.save(errored);
-          context.getStateMachine().sendEvent(CLEANUP_EVENTS.ERROR);
-          return;
-        }
-
-
-        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage)));
+        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage)));
         configService.save(errored);
 
         context.getStateMachine().sendEvent(CLEANUP_EVENTS.ERROR_TREATED);
 
-
       }
+
     };
   }
-
 
   public TaskExecutor myAsyncTaskExecutor() {
     ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
     taskExecutor.setCorePoolSize(5);
     taskExecutor.initialize();
     return taskExecutor;
-  }
-
-  public void finalAction(LocalDate runDate) {
-    logger.info(String.format("%s - Fin du traitement", runDate.format(format1)));
   }
 
 

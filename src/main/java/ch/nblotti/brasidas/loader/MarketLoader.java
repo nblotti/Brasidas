@@ -190,6 +190,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
         context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
+        context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
+
 
       }
     };
@@ -206,7 +208,14 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         Message<LOADER_EVENTS> message;
 
         LocalDate runDate = (LocalDate) context.getMessageHeader("runDate");
-        Boolean runPartial = (Boolean) context.getMessageHeader("runPartial");
+        Long id = (Long) context.getMessageHeader("loadId");
+
+        ConfigDTO current = configService.findById(id);
+
+        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
+        configService.update(current);
+
+
 
 
         if (runDate == null) {
@@ -293,22 +302,13 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       @Override
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
-        LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
-        List<ConfigDTO> configDTOS = configService.getAll(LOADER, RUNNING_JOBS);
 
-        List<ConfigDTO> errored = configDTOS.stream().filter(configDTO -> {
-          if (configService.parseDate(configDTO).equals(runDate) && configService.isInGivenStatus(configDTO, JobStatus.RUNNING))
-            return true;
-          return false;
-        }).collect(Collectors.toList());
+        Long id = (Long) context.getMessageHeader("loadId");
 
-        errored.stream().forEach(current -> {
+        ConfigDTO errored = configService.findById(id);
 
-          current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.ERROR, LocalDateTime.now().format(formatMessage)));
-          configService.save(current);
-
-        });
-
+        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
+        configService.update(errored);
 
         context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR_TREATED);
       }
@@ -341,6 +341,14 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       @Override
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
+
+        Long id = (Long) context.getMessageHeader("loadId");
+
+        ConfigDTO current = configService.findById(id);
+
+        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage)));
+        configService.update(current);
+
         List<LocalDate> runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");
 
         LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
@@ -349,7 +357,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         Duration diff = Duration.between(runTimeStart, runTimeEnd);
 
         String process = String.format("Loading ended. %s days treated in %s minutes", runDates.size(), diff.toMinutes());
-        context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR);
+        context.getStateMachine().sendEvent(LOADER_EVENTS.SUCCESS);
 
       }
     };

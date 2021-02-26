@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +43,9 @@ public class FirmInfoService {
 
   @Autowired
   protected ModelMapper modelMapper;
+
+  @Autowired
+  DateTimeFormatter format1;
 
 
   public Optional<FirmInfoDTO> getInfosByDateAndExchangeAndFirm(LocalDate runDate, String exchange, String symbol) {
@@ -132,5 +136,7 @@ public class FirmInfoService {
   }
 
     public void deleteByDate(LocalDate runDate) {
+
+      restTemplate.delete(String.format("%s?localDate=%s",firmInfoStr, runDate.format(format1)));
     }
 }
