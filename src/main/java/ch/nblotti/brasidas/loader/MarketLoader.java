@@ -321,7 +321,6 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
     FirmService firmService = beanFactory.getBean(FirmService.class);
     LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
 
-    Boolean runPartial = (Boolean) context.getExtendedState().getVariables().get("runPartial");
 
     logger.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
     List<FirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
@@ -329,7 +328,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
     Iterable<FirmQuoteDTO> firmSaved = firmService.saveAllEODMarketQuotes(firmsForGivenExchange);
 
-    if (Boolean.FALSE == runPartial)
+
       loadDetails(exchange, firmsForGivenExchange, runDate, context);
 
     logger.info(String.format("%s - %s - End load process", exchange, runDate.format(format1)));
