@@ -119,4 +119,7 @@ public class FirmHighlightsService {
 
     return Arrays.asList(responseEntity.clone());
   }
+
+  public void deleteByDate(LocalDate runDate) {
+  }
 }

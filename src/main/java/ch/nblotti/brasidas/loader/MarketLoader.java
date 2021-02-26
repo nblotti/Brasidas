@@ -1,5 +1,7 @@
 package ch.nblotti.brasidas.loader;
 
+import ch.nblotti.brasidas.configuration.ConfigDTO;
+import ch.nblotti.brasidas.configuration.ConfigService;
 import ch.nblotti.brasidas.exchange.firm.EODFirmFundamentalRepository;
 import ch.nblotti.brasidas.exchange.firm.FirmQuoteDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
@@ -11,7 +13,6 @@ import ch.nblotti.brasidas.exchange.firmsharestats.FirmShareStatsDTO;
 import ch.nblotti.brasidas.exchange.firmsharestats.FirmSharesStatsService;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationDTO;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationService;
-import ch.nblotti.brasidas.index.composition.IndexCompositionService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachine;
+import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
@@ -43,10 +45,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Configuration
-@EnableStateMachine
-public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<LOADER_STATES, LOADER_EVENTS> {
+@EnableStateMachine(name = "marketLoaderStateMachine")
+public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATES, LOADER_EVENTS> {
 
 
   private static final Logger logger = Logger.getLogger("DailyLoaderStateMachine");
@@ -61,6 +64,13 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
   private DateTimeFormatter formatMessage;
 
 
+  private static final String LOADER = "LOADER";
+  private static final String RUNNING_JOBS = "RUNNING_JOBS";
+
+  @Autowired
+  private ConfigService configService;
+
+
   public static final String EVENT_MESSAGE_DAY = "firms";
 
   @Value("${index.list}")
@@ -70,8 +80,6 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
   @Value("${nyse.closed.days}")
   public String nyseClosedDays;
 
-  @Autowired
-  IndexCompositionService indexCompositionService;
 
   @Autowired
   private BeanFactory beanFactory;
@@ -233,7 +241,7 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
         Map<Object, Object> variables = stateContext.getExtendedState().getVariables();
 
         try {
-          loadMarket(DailyLoaderStateMachine.this.EXCHANGE_NYSE, stateContext);
+          loadMarket(MarketLoader.this.EXCHANGE_NYSE, stateContext);
         } catch (Exception ex) {
           variables.put("T1", false);
           return;
@@ -253,7 +261,7 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
         Map<Object, Object> variables = stateContext.getExtendedState().getVariables();
 
         try {
-          loadMarket(DailyLoaderStateMachine.this.EXCHANGE_NASDAQ, stateContext);
+          loadMarket(MarketLoader.this.EXCHANGE_NASDAQ, stateContext);
         } catch (Exception ex) {
           variables.put("T2", false);
           return;
@@ -284,9 +292,25 @@ public class DailyLoaderStateMachine extends EnumStateMachineConfigurerAdapter<L
 
       @Override
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
-        System.out.println("errorAction - in");
+
+        LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
+        List<ConfigDTO> configDTOS = configService.getAll(LOADER, RUNNING_JOBS);
+
+        List<ConfigDTO> errored = configDTOS.stream().filter(configDTO -> {
+          if (configService.parseDate(configDTO).equals(runDate) && configService.isInGivenStatus(configDTO, JobStatus.RUNNING))
+            return true;
+          return false;
+        }).collect(Collectors.toList());
+
+        errored.stream().forEach(current -> {
+
+          current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.ERROR, LocalDateTime.now().format(formatMessage)));
+          configService.save(current);
+
+        });
+
+
         context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR_TREATED);
-        System.out.println("errorAction - out");
       }
     };
   }

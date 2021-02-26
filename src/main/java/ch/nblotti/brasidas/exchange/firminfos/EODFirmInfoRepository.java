@@ -2,7 +2,6 @@ package ch.nblotti.brasidas.exchange.firminfos;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -32,7 +31,7 @@ class EODFirmInfoRepository {
 
 
   @Autowired
-  protected RestTemplate restTemplate;
+  protected RestTemplate externalRestTemplate;
 
 
   @Value("${spring.application.eod.api.key}")
@@ -76,7 +75,7 @@ class EODFirmInfoRepository {
       int networkErrorHandling = 0;
       while (networkErrorHandling < MAX_RETRY) {
         try {
-          ResponseEntity<String> entity = restTemplate.getForEntity(finalUrl, String.class);
+          ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {

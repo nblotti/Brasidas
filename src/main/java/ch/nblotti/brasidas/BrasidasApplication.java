@@ -14,11 +14,8 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.format.Formatter;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
@@ -26,8 +23,7 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.statemachine.StateMachineSystemConstants;
+import org.springframework.statemachine.config.EnableStateMachine;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -45,6 +41,7 @@ import java.util.logging.Logger;
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
+
 @PropertySource(value = "classpath:override.properties", ignoreResourceNotFound = true)
 public class BrasidasApplication {
 
@@ -96,14 +93,27 @@ public class BrasidasApplication {
   public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder, JwtLocalToken jwtLocalToken) {
 
 
+    //RestTemplate restTemplate = externalRestTemplate(restTemplateBuilder);
     RestTemplate restTemplate = restTemplateBuilder
       .setConnectTimeout(Duration.ofSeconds(30))
       .setReadTimeout(Duration.ofMinutes(5))
       .build();
-
     restTemplate.setInterceptors(Arrays.asList(interceptor(jwtLocalToken)));
     return restTemplate;
   }
+
+
+  @Bean
+  public RestTemplate externalRestTemplate(RestTemplateBuilder restTemplateBuilder) {
+
+
+    RestTemplate restTemplate = restTemplateBuilder
+      .setConnectTimeout(Duration.ofSeconds(30))
+      .setReadTimeout(Duration.ofMinutes(5))
+      .build();
+    return restTemplate;
+  }
+
 
   @Bean
   ClientHttpRequestInterceptor interceptor(JwtLocalToken jwtLocalToken) {
@@ -132,8 +142,8 @@ public class BrasidasApplication {
         try {
           response = clientHttpRequestExecution.execute(httpRequest, bytes);
         } catch (IOException exception) {
-          try{
-          logger.severe("Error sending request, retrying in 30s");
+          try {
+            logger.severe("Error sending request, retrying in 30s");
             Thread.sleep(30000);
           } catch (InterruptedException e) {
             logger.severe("Sleep time interrupted have not waited 30s before retry");

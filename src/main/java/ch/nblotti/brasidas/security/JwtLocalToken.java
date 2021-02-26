@@ -43,6 +43,9 @@ public class JwtLocalToken {
   @Autowired
   private Key key;
 
+  @Autowired
+  private RestTemplate externalRestTemplate;
+
 
   private String jwtToken;
 
@@ -81,8 +84,7 @@ public class JwtLocalToken {
 
         jsonObject.put("idTokenString", token);
 
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<JSONObject> response = restTemplate.postForEntity(loginUrl, jsonObject, JSONObject.class);
+        ResponseEntity<JSONObject> response = externalRestTemplate.postForEntity(loginUrl, jsonObject, JSONObject.class);
         responseStr = String.format("Bearer %s", response.getBody().get("response").toString());
       } catch (Exception ex) {
         try {
@@ -101,8 +103,7 @@ public class JwtLocalToken {
 
   private String getGeneratedString() {
 
-    RestTemplate restTemplate = new RestTemplate();
-    ResponseEntity<String> response = restTemplate.getForEntity(sharedkeyUrl, String.class);
+    ResponseEntity<String> response = externalRestTemplate.getForEntity(sharedkeyUrl, String.class);
 
     return response.getBody();
   }

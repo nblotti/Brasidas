@@ -31,7 +31,7 @@ class EODFirmSharesStatsRepository {
 
 
   @Autowired
-  protected RestTemplate restTemplate;
+  protected RestTemplate externalRestTemplate;
 
   @Value("${spring.application.eod.api.key}")
   protected String apiKey;
@@ -65,7 +65,7 @@ class EODFirmSharesStatsRepository {
       int networkErrorHandling = 0;
       while (networkErrorHandling< MAX_RETRY) {
         try {
-          ResponseEntity<String> entity = restTemplate.getForEntity(finalUrl, String.class);
+          ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {

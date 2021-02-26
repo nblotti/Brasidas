@@ -95,4 +95,7 @@ public class FirmValuationService {
 
       return Arrays.asList(responseEntity.clone());
     }
+
+  public void deleteByDate(LocalDate runDate) {
+  }
 }

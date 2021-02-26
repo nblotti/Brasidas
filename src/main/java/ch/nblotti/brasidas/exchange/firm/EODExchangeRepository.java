@@ -39,7 +39,7 @@ class EODExchangeRepository {
   protected DateTimeFormatter format1;
 
   @Autowired
-  protected RestTemplate restTemplate;
+  protected RestTemplate externalRestTemplate;
 
   @Value("${spring.application.eod.api.key}")
   protected String apiKey;
@@ -64,7 +64,7 @@ class EODExchangeRepository {
       boolean networkErrorHandling = false;
       while (!networkErrorHandling) {
         try {
-          ResponseEntity<String> entity = restTemplate.getForEntity(finalUrl, String.class);
+          ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {

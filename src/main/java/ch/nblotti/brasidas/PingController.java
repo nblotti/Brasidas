@@ -31,8 +31,6 @@ public class PingController {
   @Autowired
   protected DateTimeFormatter format1;
 
-  @Autowired
-  RestTemplate restTemplate;
 
   @GetMapping
   public ResponseEntity<String> ping(@PathParam(value = "key") String key) {

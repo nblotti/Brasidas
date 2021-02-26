@@ -2,7 +2,6 @@ package ch.nblotti.brasidas.index.composition;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,7 @@ public class EODIndexCompositionRepository {
 
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate externalRestTemplate;
 
 
   public Collection<EODIndexCompositionDTO> getIndexCompositionAtDate(LocalDate localDate, String index) {
@@ -42,7 +41,7 @@ public class EODIndexCompositionRepository {
 
     String finalUrl = String.format(indexComponentUrl, index, apiKey, localDate.format(format1), localDate.format(format1));
 
-    final ResponseEntity<String> response = restTemplate.getForEntity(finalUrl, String.class);
+    final ResponseEntity<String> response = externalRestTemplate.getForEntity(finalUrl, String.class);
 
     DocumentContext jsonContext = JsonPath.parse(response.getBody());
 
