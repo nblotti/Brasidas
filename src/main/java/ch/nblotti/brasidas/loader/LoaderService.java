@@ -242,7 +242,7 @@ public class LoaderService {
     startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
   }
 
-  @Scheduled(cron = "${loader.recurring.cron.expression}")
+  //@Scheduled(cron = "${loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
 
     List<ConfigDTO> configDTOS = configService.getAll(LOADER, RUNNING_JOBS);

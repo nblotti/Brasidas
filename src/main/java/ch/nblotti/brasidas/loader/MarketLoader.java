@@ -247,6 +247,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           loadMarket(MarketLoader.this.EXCHANGE_NYSE, stateContext);
         } catch (Exception ex) {
           variables.put("T1", false);
+          logger.severe(ex.toString());
           return;
         }
         variables.put("T1", true);
@@ -267,6 +268,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           loadMarket(MarketLoader.this.EXCHANGE_NASDAQ, stateContext);
         } catch (Exception ex) {
           variables.put("T2", false);
+          logger.severe(ex.toString());
           return;
         }
         variables.put("T2", true);
