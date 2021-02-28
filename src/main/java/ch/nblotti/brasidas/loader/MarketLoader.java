@@ -327,8 +327,19 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       loadAndSave(exchange, current, runDate, context);
       if (i != 0) {
         double percentDone = (i / size) * 100;
-        if (i % 100 == 0)
-          logger.info(String.format("%s - %s%% done (%d on %d)", exchange, new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue(),  i, (int) size));
+        if (i % 100 == 0) {
+
+          LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
+          LocalDateTime runTimeEnd = LocalDateTime.now();
+
+          Duration diff = Duration.between(runTimeStart, runTimeEnd);
+
+          double percent = new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue();
+          double minutesLeft = new BigDecimal(diff.toMinutes() / percent).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+          logger.info(String.format("%s - %s treated in %s minutes. (%s%%). Expected end time int %s= minutes ", exchange, i, diff.toMinutes(), percent, minutesLeft));
+
+        }
       }
 
     }
