@@ -115,14 +115,6 @@ public class FirmHighlightsService {
 
   }
 
-  public List<FirmHighlightsDTO> saveAll(List<FirmHighlightsDTO> firmHighlights) {
-
-    HttpEntity<List<FirmHighlightsDTO>> request = new HttpEntity<>(firmHighlights);
-
-    FirmHighlightsDTO[] responseEntity = restTemplate.postForObject(firmHighlightStr, request, FirmHighlightsDTO[].class);
-
-    return Arrays.asList(responseEntity.clone());
-  }
 
   public void deleteByDate(LocalDate runDate) {
     restTemplate.delete(String.format("%s?localDate=%s",firmHighlightStr, runDate.format(format1)));

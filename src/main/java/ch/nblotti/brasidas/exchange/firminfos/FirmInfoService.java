@@ -124,16 +124,7 @@ public class FirmInfoService {
     return firmInfoDTO;
   }
 
-  public List<FirmInfoDTO> saveAll(List<FirmInfoDTO> firmInfos) {
 
-    HttpEntity<List<FirmInfoDTO>> request = new HttpEntity<>(firmInfos);
-
-    FirmInfoDTO[] responseEntity = restTemplate.postForObject(firmInfoStr, request, FirmInfoDTO[].class);
-
-
-    return Arrays.asList(responseEntity.clone());
-
-  }
 
     public void deleteByDate(LocalDate runDate) {
 

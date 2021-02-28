@@ -49,8 +49,8 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
   private DateTimeFormatter formatMessage;
 
 
-  private static final String LOADER = "LOADER";
-  private static final String RUNNING_JOBS = "RUNNING_JOBS";
+  private static final String CLEANER = "CLEANER";
+  private static final String ERROR_JOBS = "ERROR_JOBS";
 
   @Autowired
   private ConfigService configService;
@@ -62,13 +62,6 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
   @Autowired
   private BeanFactory beanFactory;
 
-
-  public TaskExecutor taskExecutor() {
-    ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-    taskExecutor.setCorePoolSize(5);
-    taskExecutor.initialize();
-    return taskExecutor;
-  }
 
   @Override
   public void configure(

@@ -26,7 +26,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachine;
-import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
@@ -40,12 +39,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableStateMachine(name = "marketLoaderStateMachine")
@@ -209,13 +204,12 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         LocalDate runDate = (LocalDate) context.getMessageHeader("runDate");
         Long id = (Long) context.getMessageHeader("loadId");
+        context.getExtendedState().getVariables().put("loadId", id);
 
         ConfigDTO current = configService.findById(id);
 
         current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
         configService.update(current);
-
-
 
 
         if (runDate == null) {
@@ -303,7 +297,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
 
-        Long id = (Long) context.getMessageHeader("loadId");
+        Long id = (Long) context.getExtendedState().getVariables().get("loadId");
 
         ConfigDTO errored = configService.findById(id);
 
@@ -325,11 +319,19 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
     logger.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
     List<FirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
 
+    int size = firmsForGivenExchange.size();
 
-    Iterable<FirmQuoteDTO> firmSaved = firmService.saveAllEODMarketQuotes(firmsForGivenExchange);
+    for (int i = 0; i <= firmsForGivenExchange.size(); i++) {
+      FirmQuoteDTO current = firmsForGivenExchange.get(i);
 
+      loadAndSave(exchange, current, runDate, context);
+      if (i != 0) {
+        double percentDone = (i / size) * 100;
+        if (i % 100 == 0)
+          logger.info(String.format("%s - %s%% done (%d on %d)", exchange, new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue(),  i, (int) size));
+      }
 
-      loadDetails(exchange, firmsForGivenExchange, runDate, context);
+    }
 
     logger.info(String.format("%s - %s - End load process", exchange, runDate.format(format1)));
   }
@@ -375,77 +377,70 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
 
-  private void loadDetails(String exchange, List<FirmQuoteDTO> firms, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
-
-    List<FirmInfoDTO> firmInfos = new ArrayList<>();
-    List<FirmValuationDTO> firmValuations = new ArrayList<>();
-    List<FirmHighlightsDTO> firmHighlights = new ArrayList<>();
-    List<FirmShareStatsDTO> firmSharesStats = new ArrayList<>();
-
-    double loop = 0;
-    double size = firms.size();
-
-    for (FirmQuoteDTO firmEODQuoteTO : firms) {
+  private void loadAndSave(String exchange, FirmQuoteDTO firm, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
 
-      if (LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
-        return;
+    if (LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
+      return;
 
-      EODFirmFundamentalRepository eODFirmFundamentalRepository = beanFactory.getBean(EODFirmFundamentalRepository.class);
-      Optional<String> type = eODFirmFundamentalRepository.getTypeByDateAndFirm(runDate, firmEODQuoteTO.getExchangeShortName(), firmEODQuoteTO.getCode());
+    EODFirmFundamentalRepository eODFirmFundamentalRepository = beanFactory.getBean(EODFirmFundamentalRepository.class);
+    Optional<String> type = eODFirmFundamentalRepository.getTypeByDateAndFirm(runDate, firm.getExchangeShortName(), firm.getCode());
 
-      if (!type.isPresent())
-        continue;
+    if (!type.isPresent())
+      return;
 
-      if (type.get().equals("Common Stock")) {
-        Optional<FirmInfoDTO> info = getFirmStockInfo(runDate, firmEODQuoteTO);
+    if (type.get().equals("Common Stock")) {
+
+
+      try {
+        FirmService firmService = beanFactory.getBean(FirmService.class);
+        firmService.saveEODMarketQuotes(firm);
+      } catch (Exception e) {
+        logger.severe(" FirmService.saveAll");
+        logger.severe(e.getMessage());
+      }
+      try {
+        FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
+        Optional<FirmInfoDTO> info = getFirmStockInfo(runDate, firm);
         if (info.isPresent())
-          firmInfos.add(info.get());
-        Optional<FirmValuationDTO> valuation = getFirmStockValuation(runDate, firmEODQuoteTO);
+          firmInfoService.save(info.get());
+      } catch (Exception e) {
+        logger.severe(" firmInfoService.saveAll");
+        logger.severe(e.getMessage());
+      }
+      try {
+        FirmValuationService firmValuationService = beanFactory.getBean(FirmValuationService.class);
+        Optional<FirmValuationDTO> valuation = getFirmStockValuation(runDate, firm);
         if (valuation.isPresent())
-          firmValuations.add(valuation.get());
-        Optional<FirmHighlightsDTO> highlight = getFirmStockHighLights(runDate, firmEODQuoteTO);
-        if (highlight.isPresent())
-          firmHighlights.add(highlight.get());
-        Optional<FirmShareStatsDTO> shareStat = getFirmStockShareStats(runDate, firmEODQuoteTO);
-        if (shareStat.isPresent())
-          firmSharesStats.add(shareStat.get());
+          firmValuationService.save(valuation.get());
+      } catch (Exception e) {
+        logger.severe(" firmValuationService.saveAll");
+        logger.severe(e.getMessage());
       }
-      if (++loop != 0) {
-        double percentDone = (loop / size) * 100;
-        if (loop % 100 == 0)
-          logger.info(String.format("%s - %s%% done (%d on %d)", exchange, new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue(), (int) loop, (int) size));
-      }
+      try {
+        FirmSharesStatsService firmSharesStatsService = beanFactory.getBean(FirmSharesStatsService.class);
 
+        Optional<FirmShareStatsDTO> shareStat = getFirmStockShareStats(runDate, firm);
+        if (shareStat.isPresent())
+          firmSharesStatsService.save(shareStat.get());
+
+      } catch (Exception e) {
+        logger.severe(" firmSharesStatsService.saveAll");
+        logger.severe(e.getMessage());
+      }
+      try {
+        FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
+        Optional<FirmHighlightsDTO> highlight = getFirmStockHighLights(runDate, firm);
+        if (highlight.isPresent())
+          firmHighlightsService.save(highlight.get());
+
+      } catch (Exception e) {
+        logger.severe(" firmHighlightsService.saveAll");
+        logger.severe(e.getMessage());
+      }
     }
-    try {
-      FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
-      firmInfoService.saveAll(firmInfos);
-    } catch (Exception e) {
-      logger.severe(" firmInfoService.saveAll");
-      logger.severe(e.getMessage());
-    }
-    try {
-      FirmValuationService firmValuationService = beanFactory.getBean(FirmValuationService.class);
-      firmValuationService.saveAll(firmValuations);
-    } catch (Exception e) {
-      logger.severe(" firmValuationService.saveAll");
-      logger.severe(e.getMessage());
-    }
-    try {
-      FirmSharesStatsService firmSharesStatsService = beanFactory.getBean(FirmSharesStatsService.class);
-      firmSharesStatsService.saveAll(firmSharesStats);
-    } catch (Exception e) {
-      logger.severe(" firmSharesStatsService.saveAll");
-      logger.severe(e.getMessage());
-    }
-    try {
-      FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
-      firmHighlightsService.saveAll(firmHighlights);
-    } catch (Exception e) {
-      logger.severe(" firmHighlightsService.saveAll");
-      logger.severe(e.getMessage());
-    }
+
+
   }
 
   private Optional<FirmInfoDTO> getFirmStockInfo(LocalDate runDate, FirmQuoteDTO firmEODQuoteTO) {

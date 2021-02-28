@@ -48,9 +48,9 @@ public class FirmService {
     List<EODExchangeDTO> eodFirmQuoteDTOS = eODExchangeRepository.getExchangeDataByDate(localDate, exchange);
     List<FirmQuoteDTO> firmsTOs = eodFirmQuoteDTOS.stream().map(x -> modelMapper.map(x, FirmQuoteDTO.class)).collect(Collectors.toList());
 
-    List<FirmQuoteDTO> filtredFirmsTOs =firmsTOs.stream().map(firmQuoteDTO -> {
-       firmQuoteDTO.setActualExchange(exchange);
-       return firmQuoteDTO;
+    List<FirmQuoteDTO> filtredFirmsTOs = firmsTOs.stream().map(firmQuoteDTO -> {
+      firmQuoteDTO.setActualExchange(exchange);
+      return firmQuoteDTO;
     }).filter(y -> !y.getCode().startsWith("-")).collect(Collectors.toList());
 
 
@@ -81,17 +81,16 @@ public class FirmService {
 
   }
 
-  public Iterable<FirmQuoteDTO> saveAllEODMarketQuotes(List<FirmQuoteDTO> firmsTOs) {
+  public FirmQuoteDTO saveEODMarketQuotes(FirmQuoteDTO firmsTO) {
 
-    HttpEntity<List<FirmQuoteDTO>> request = new HttpEntity<List<FirmQuoteDTO>>(firmsTOs);
+    HttpEntity<FirmQuoteDTO> request = new HttpEntity<FirmQuoteDTO>(firmsTO);
 
-    FirmQuoteDTO[] responseEntity = restTemplate.postForObject(firmQuoteStr, request, FirmQuoteDTO[].class);
+    return restTemplate.postForObject(firmQuoteStr, request, FirmQuoteDTO.class);
 
-    return Arrays.asList(responseEntity);
   }
 
 
-    public void deleteByDate(LocalDate runDate) {
-      restTemplate.delete(String.format("%s?localDate=%s",firmQuoteStr, runDate.format(format1)));
-    }
+  public void deleteByDate(LocalDate runDate) {
+    restTemplate.delete(String.format("%s?localDate=%s", firmQuoteStr, runDate.format(format1)));
+  }
 }

@@ -91,14 +91,6 @@ public class FirmValuationService {
     return responseEntity;
   }
 
-    public List<FirmValuationDTO> saveAll(List<FirmValuationDTO> firmValuations) {
-
-      HttpEntity<List<FirmValuationDTO>> request = new HttpEntity<>(firmValuations);
-
-      FirmValuationDTO[] responseEntity = restTemplate.postForObject(firmValuationStr, request, FirmValuationDTO[].class);
-
-      return Arrays.asList(responseEntity.clone());
-    }
 
   public void deleteByDate(LocalDate runDate) {
     restTemplate.delete(String.format("%s?localDate=%s",firmValuationStr, runDate.format(format1)));

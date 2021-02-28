@@ -50,6 +50,7 @@ public class ConfigService {
   public ConfigDTO findById(Long id) {
 
 
+
     ResponseEntity<ConfigDTO> returned = restTemplate.getForEntity(String.format("%sid?id=%s", firmQuoteStr, id), ConfigDTO.class);
 
     return returned.getBody();
