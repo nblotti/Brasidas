@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 
 @Service
@@ -25,16 +26,21 @@ import java.util.List;
 public class ConfigService {
 
 
-  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\"}";
+  private static final Logger logger = Logger.getLogger("ConfigService");
+  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\",\"retry\":\"%s\"}";
 
   private String runningSatusStr = "$..status";
   private String runningDateStr = "$..date";
   private String updatedDateStr = "$..updated";
   private String runningPartialStr = "$..partial";
+  private String shouldRetryStr = "$..retry";
 
 
   @Value("${referential.config.baseurl}")
   private String firmQuoteStr;
+
+  @Value("${loader.job.max.retry}")
+  private int maxRetry;
 
   @Autowired
   private RestTemplate restTemplate;
@@ -48,7 +54,6 @@ public class ConfigService {
 
 
   public ConfigDTO findById(Long id) {
-
 
 
     ResponseEntity<ConfigDTO> returned = restTemplate.getForEntity(String.format("%sid?id=%s", firmQuoteStr, id), ConfigDTO.class);
@@ -127,7 +132,24 @@ public class ConfigService {
   }
 
 
-}
+  public int retryCount(ConfigDTO configDTO) {
 
+    DocumentContext content = JsonPath.parse(configDTO.getValue());
+    JSONArray json = content.read(shouldRetryStr);
+    String type = json.get(0).toString();
+
+    try {
+      return Integer.parseInt(type);
+    } catch (NumberFormatException nf) {
+      return 1;
+    }
+  }
+
+  public boolean shouldRetry(ConfigDTO configDTO) {
+
+        return retryCount(configDTO) < maxRetry;
+
+  }
+}
 
 

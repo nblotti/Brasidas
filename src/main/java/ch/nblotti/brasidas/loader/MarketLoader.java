@@ -208,7 +208,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         ConfigDTO current = configService.findById(id);
 
-        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
+        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage),configService.retryCount(current)+1));
         configService.update(current);
 
 
@@ -303,7 +303,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         ConfigDTO errored = configService.findById(id);
 
-        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage)));
+        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage),configService.retryCount(errored)));
         configService.update(errored);
 
         context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR_TREATED);
@@ -339,7 +339,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           double percent = new BigDecimal(percentDone / 100).setScale(2, RoundingMode.HALF_UP).doubleValue();
 
           if (percent != 0) {
-            int minutesLeft = new BigDecimal(diff.toMinutes() / percent).setScale(2, RoundingMode.HALF_UP).intValue();
+            int minutesLeft = new BigDecimal((diff.toMinutes() / percent)- diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue() ;
             logger.info(String.format("%s - %s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i, diff.toMinutes(), percent*100, minutesLeft));
           } else {
             logger.info(String.format("%s - %s treated in %s minutes. (%s%%).", exchange, i, diff.toMinutes(), percent*100));
@@ -363,7 +363,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         ConfigDTO current = configService.findById(id);
 
-        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage)));
+        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage),configService.retryCount(current)));
         configService.update(current);
 
         List<LocalDate> runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");

@@ -223,7 +223,7 @@ public class LoaderService {
           ConfigDTO configDTO = new ConfigDTO();
           configDTO.setCode(LOADER);
           configDTO.setType(RUNNING_JOBS);
-          configDTO.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage)));
+          configDTO.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage),0));
           return configDTO;
 
         }).collect(Collectors.toList());
@@ -251,7 +251,11 @@ public class LoaderService {
     if (!running.isEmpty()) {
       running.stream().forEach(currentRunning -> {
         if (isHanging(currentRunning)) {
-          currentRunning.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(currentRunning).format(format1), configService.isPartial(currentRunning), JobStatus.ERROR, LocalDateTime.now().format(formatMessage)));
+          if(configService.shouldRetry(currentRunning))
+            currentRunning.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(currentRunning).format(format1), configService.isPartial(currentRunning), JobStatus.ERROR, LocalDateTime.now().format(formatMessage),configService.retryCount(currentRunning)));
+          else
+            currentRunning.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(currentRunning).format(format1), configService.isPartial(currentRunning), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage),configService.retryCount(currentRunning)));
+
           configService.update(currentRunning);
         }
 
@@ -265,9 +269,12 @@ public class LoaderService {
 
       errored.stream().forEach(currentErrored -> {
 
+        if(!configService.shouldRetry(currentErrored)) {
+          currentErrored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(currentErrored).format(format1), configService.isPartial(currentErrored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), configService.retryCount(currentErrored) ));
+          configService.update(currentErrored);
+          return;
+        }
         LocalDate runDate = configService.parseDate(currentErrored);
-
-
 
         Message<CLEANUP_EVENTS> message = MessageBuilder
           .withPayload(CLEANUP_EVENTS.EVENT_RECEIVED)
@@ -288,6 +295,12 @@ public class LoaderService {
 
     ConfigDTO current = toRun.iterator().next();
 
+    if(!configService.shouldRetry(current)) {
+      current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), configService.retryCount(current) ));
+      configService.update(current);
+      return;
+    }
+
     LocalDate runDate = configService.parseDate(current);
     Message<LOADER_EVENTS> message = MessageBuilder
       .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
@@ -307,6 +320,7 @@ public class LoaderService {
 
     return minutes >= maxRunningTime;
   }
+
 
 
   private void cleanup(ConfigDTO configDTO) {

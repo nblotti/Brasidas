@@ -196,10 +196,6 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
             firmHighlightsService.deleteByDate(runDate);
 
 
-            errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage)));
-            configService.save(errored);
-
-
             message = MessageBuilder
               .withPayload(CLEANUP_EVENTS.SUCCESS).build();
 
@@ -227,7 +223,7 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
         Long id = (Long) context.getExtendedState().getVariables().get("erroredId");
         ConfigDTO errored = configService.findById(id);
 
-        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage)));
+        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage),configService.retryCount(errored)+1));
         configService.save(errored);
 
         context.getStateMachine().sendEvent(CLEANUP_EVENTS.ERROR_TREATED);
