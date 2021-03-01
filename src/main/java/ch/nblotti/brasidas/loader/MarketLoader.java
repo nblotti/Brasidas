@@ -303,7 +303,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         ConfigDTO errored = configService.findById(id);
 
-        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage)));
+        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage)));
         configService.update(errored);
 
         context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR_TREATED);
