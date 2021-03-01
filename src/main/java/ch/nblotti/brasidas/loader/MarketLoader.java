@@ -328,7 +328,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
       loadAndSave(exchange, current, runDate, context);
       if (i != 0) {
-        double percentDone = (i / size) * 100;
+        double percentDone = (i * 100 / size);
         if (i % 100 == 0) {
 
           LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
@@ -336,11 +336,14 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
           Duration diff = Duration.between(runTimeStart, runTimeEnd);
 
-          double percent = new BigDecimal(percentDone).setScale(2, RoundingMode.HALF_UP).doubleValue();
-          double minutesLeft = new BigDecimal(diff.toMinutes() / percent).setScale(2, RoundingMode.HALF_UP).doubleValue();
+          double percent = new BigDecimal(percentDone / 100).setScale(2, RoundingMode.HALF_UP).doubleValue();
 
-          logger.info(String.format("%s - %s treated in %s minutes. (%s%%). Expected end time int %s= minutes ", exchange, i, diff.toMinutes(), percent, minutesLeft));
-
+          if (percent != 0) {
+            int minutesLeft = new BigDecimal(diff.toMinutes() / percent).setScale(2, RoundingMode.HALF_UP).intValue();
+            logger.info(String.format("%s - %s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i, diff.toMinutes(), percent*100, minutesLeft));
+          } else {
+            logger.info(String.format("%s - %s treated in %s minutes. (%s%%).", exchange, i, diff.toMinutes(), percent*100));
+          }
         }
       }
 
@@ -392,17 +395,25 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
   private void loadAndSave(String exchange, FirmQuoteDTO firm, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
-
+    String type = "";
     if (LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
       return;
 
-    EODFirmFundamentalRepository eODFirmFundamentalRepository = beanFactory.getBean(EODFirmFundamentalRepository.class);
-    Optional<String> type = eODFirmFundamentalRepository.getTypeByDateAndFirm(runDate, firm.getExchangeShortName(), firm.getCode());
+    try {
+      EODFirmFundamentalRepository eODFirmFundamentalRepository = beanFactory.getBean(EODFirmFundamentalRepository.class);
+      Optional<String> typeOpt = eODFirmFundamentalRepository.getTypeByDateAndFirm(runDate, firm.getExchangeShortName(), firm.getCode());
+      if (!typeOpt.isPresent())
+        return;
 
-    if (!type.isPresent())
-      return;
+      type = typeOpt.get();
 
-    if (type.get().equals("Common Stock")) {
+    } catch (Exception e) {
+      logger.severe(String.format("%s - %s - loadAndSave",firm.getExchangeShortName(),firm.getCode()));
+      logger.severe(e.getMessage());
+    }
+
+
+    if (type.equals("Common Stock")) {
 
 
       try {
