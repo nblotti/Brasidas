@@ -183,8 +183,6 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       @Override
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
-        context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
-        context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
 
 
       }
@@ -204,6 +202,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         LocalDate runDate = (LocalDate) context.getMessageHeader("runDate");
         Long id = (Long) context.getMessageHeader("loadId");
         context.getExtendedState().getVariables().put("loadId", id);
+        context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
+
 
         ConfigDTO current = loadConfigService.findById(id);
 
@@ -284,8 +284,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       public boolean evaluate(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
         Map<Object, Object> variables = context.getExtendedState().getVariables();
         return !(ObjectUtils.nullSafeEquals(variables.get("T1"), true)
-          && ObjectUtils.nullSafeEquals(variables.get("T2"), true)
-          && ObjectUtils.nullSafeEquals(variables.get("T3"), true));
+          && ObjectUtils.nullSafeEquals(variables.get("T2"), true));
       }
     };
   }
