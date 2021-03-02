@@ -191,6 +191,8 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
             FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
             firmHighlightsService.deleteByDate(runDate);
 
+            errored.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(errored).format(format1), loadConfigService.isPartial(errored), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(errored)+1));
+            loadConfigService.save(errored);
 
             message = MessageBuilder
               .withPayload(CLEANUP_EVENTS.SUCCESS).build();
