@@ -163,7 +163,7 @@ public class SplitService {
   }
 
 
-  @Scheduled(cron = "${loader.daily.cron.expression}")
+  @Scheduled(cron = "${split.daily.cron.expression}")
   @Transactional
   public void scheduleDailyTask() {
 
