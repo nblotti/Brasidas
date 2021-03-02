@@ -1,9 +1,8 @@
 package ch.nblotti.brasidas.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
-import ch.nblotti.brasidas.configuration.ConfigService;
 import ch.nblotti.brasidas.exchange.firm.EODFirmFundamentalRepository;
-import ch.nblotti.brasidas.exchange.firm.FirmQuoteDTO;
+import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsDTO;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsService;
@@ -63,7 +62,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   private static final String RUNNING_JOBS = "RUNNING_JOBS";
 
   @Autowired
-  private ConfigService configService;
+  private LoadConfigService loadConfigService;
 
 
   public static final String EVENT_MESSAGE_DAY = "firms";
@@ -206,10 +205,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         Long id = (Long) context.getMessageHeader("loadId");
         context.getExtendedState().getVariables().put("loadId", id);
 
-        ConfigDTO current = configService.findById(id);
+        ConfigDTO current = loadConfigService.findById(id);
 
-        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage),configService.retryCount(current)+1));
-        configService.update(current);
+        current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current)+1));
+        loadConfigService.update(current);
 
 
         if (runDate == null) {
@@ -301,10 +300,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         Long id = (Long) context.getExtendedState().getVariables().get("loadId");
 
-        ConfigDTO errored = configService.findById(id);
+        ConfigDTO errored = loadConfigService.findById(id);
 
-        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage),configService.retryCount(errored)));
-        configService.update(errored);
+        errored.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(errored).format(format1), loadConfigService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(errored)));
+        loadConfigService.update(errored);
 
         context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR_TREATED);
       }
@@ -319,12 +318,12 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
 
     logger.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
-    List<FirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
+    List<ExchangeFirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
 
     int size = firmsForGivenExchange.size();
 
-    for (int i = 0; i <= firmsForGivenExchange.size(); i++) {
-      FirmQuoteDTO current = firmsForGivenExchange.get(i);
+    for (int i = 0; i < firmsForGivenExchange.size(); i++) {
+      ExchangeFirmQuoteDTO current = firmsForGivenExchange.get(i);
 
       loadAndSave(exchange, current, runDate, context);
       if (i != 0) {
@@ -340,9 +339,9 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
           if (percent != 0) {
             int minutesLeft = new BigDecimal((diff.toMinutes() / percent)- diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue() ;
-            logger.info(String.format("%s - %s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i, diff.toMinutes(), percent*100, minutesLeft));
+            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i,size, diff.toMinutes(), percent*100, minutesLeft));
           } else {
-            logger.info(String.format("%s - %s treated in %s minutes. (%s%%).", exchange, i, diff.toMinutes(), percent*100));
+            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%).", exchange, i,size, diff.toMinutes(), percent*100));
           }
         }
       }
@@ -361,10 +360,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         Long id = (Long) context.getMessageHeader("loadId");
 
-        ConfigDTO current = configService.findById(id);
+        ConfigDTO current = loadConfigService.findById(id);
 
-        current.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(current).format(format1), configService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage),configService.retryCount(current)));
-        configService.update(current);
+        current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current)));
+        loadConfigService.update(current);
 
         List<LocalDate> runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");
 
@@ -393,7 +392,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
 
-  private void loadAndSave(String exchange, FirmQuoteDTO firm, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+  private void loadAndSave(String exchange, ExchangeFirmQuoteDTO firm, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
     String type = "";
     if (LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
@@ -467,7 +466,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
   }
 
-  private Optional<FirmInfoDTO> getFirmStockInfo(LocalDate runDate, FirmQuoteDTO firmEODQuoteTO) {
+  private Optional<FirmInfoDTO> getFirmStockInfo(LocalDate runDate, ExchangeFirmQuoteDTO firmEODQuoteTO) {
 
     FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
     Optional<FirmInfoDTO> fIpost = firmInfoService.getInfosByDateAndExchangeAndFirm(runDate, firmEODQuoteTO.getExchangeShortName(), firmEODQuoteTO.getCode());
@@ -478,14 +477,14 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
 
-  private Optional<FirmValuationDTO> getFirmStockValuation(LocalDate runDate, FirmQuoteDTO firmEODQuoteTO) {
+  private Optional<FirmValuationDTO> getFirmStockValuation(LocalDate runDate, ExchangeFirmQuoteDTO firmEODQuoteTO) {
 
     FirmValuationService firmValuationService = beanFactory.getBean(FirmValuationService.class);
     Optional<FirmValuationDTO> fVpost = firmValuationService.getValuationByDateAndFirm(runDate, firmEODQuoteTO.getExchangeShortName(), firmEODQuoteTO.getCode());
     return fVpost;
   }
 
-  private Optional<FirmHighlightsDTO> getFirmStockHighLights(LocalDate runDate, FirmQuoteDTO firmEODQuoteTO) {
+  private Optional<FirmHighlightsDTO> getFirmStockHighLights(LocalDate runDate, ExchangeFirmQuoteDTO firmEODQuoteTO) {
 
     FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
     Optional<FirmHighlightsDTO> fHpost = firmHighlightsService.getHighlightsByDateAndFirm(runDate, firmEODQuoteTO.getExchangeShortName(), firmEODQuoteTO.getCode());
@@ -493,7 +492,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
   }
 
-  private Optional<FirmShareStatsDTO> getFirmStockShareStats(LocalDate runDate, FirmQuoteDTO firmEODQuoteTO) {
+  private Optional<FirmShareStatsDTO> getFirmStockShareStats(LocalDate runDate, ExchangeFirmQuoteDTO firmEODQuoteTO) {
 
     FirmSharesStatsService firmSharesStatsService = beanFactory.getBean(FirmSharesStatsService.class);
     Optional<FirmShareStatsDTO> fSpost = firmSharesStatsService.getSharesStatByDateAndFirm(runDate, firmEODQuoteTO.getExchangeShortName(), firmEODQuoteTO.getCode());

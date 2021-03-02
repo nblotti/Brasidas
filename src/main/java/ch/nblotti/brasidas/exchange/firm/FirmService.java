@@ -1,13 +1,13 @@
 package ch.nblotti.brasidas.exchange.firm;
 
 
-import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsDTO;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,11 +44,11 @@ public class FirmService {
   @Value("${referential.firm.quote.baseurl}")
   private String firmQuoteStr;
 
-  public List<FirmQuoteDTO> getExchangeDataForDate(LocalDate localDate, String exchange) {
+  public List<ExchangeFirmQuoteDTO> getExchangeDataForDate(LocalDate localDate, String exchange) {
     List<EODExchangeDTO> eodFirmQuoteDTOS = eODExchangeRepository.getExchangeDataByDate(localDate, exchange);
-    List<FirmQuoteDTO> firmsTOs = eodFirmQuoteDTOS.stream().map(x -> modelMapper.map(x, FirmQuoteDTO.class)).collect(Collectors.toList());
+    List<ExchangeFirmQuoteDTO> firmsTOs = eodFirmQuoteDTOS.stream().map(x -> modelMapper.map(x, ExchangeFirmQuoteDTO.class)).collect(Collectors.toList());
 
-    List<FirmQuoteDTO> filtredFirmsTOs = firmsTOs.stream().map(firmQuoteDTO -> {
+    List<ExchangeFirmQuoteDTO> filtredFirmsTOs = firmsTOs.stream().map(firmQuoteDTO -> {
       firmQuoteDTO.setActualExchange(exchange);
       return firmQuoteDTO;
     }).filter(y -> !y.getCode().startsWith("-")).collect(Collectors.toList());
@@ -57,15 +57,49 @@ public class FirmService {
     return filtredFirmsTOs;
   }
 
+  public List<FirmQuoteDTO> getFirmQuoteByDate(LocalDate startDate, LocalDate endDate, String code, String exchange) {
+    List<EODFirmQuoteDTO> eodFirmQuoteDTOS = eODExchangeRepository.getExchangeQuoteByDate(startDate, endDate, code, exchange);
+    List<FirmQuoteDTO> firmsTOs = eodFirmQuoteDTOS.stream().map(x -> modelMapper.map(x, FirmQuoteDTO.class)).collect(Collectors.toList());
+
+    return firmsTOs;
+
+  }
 
   @PostConstruct
   void initFirmQuoteMapper() {
 
-    Converter<EODExchangeDTO, FirmQuoteDTO> toUppercase = new AbstractConverter<EODExchangeDTO, FirmQuoteDTO>() {
+    Converter<EODFirmQuoteDTO, FirmQuoteDTO> toUppercase = new AbstractConverter<EODFirmQuoteDTO, FirmQuoteDTO>() {
 
       @Override
-      protected FirmQuoteDTO convert(EODExchangeDTO firmDTO) {
+      protected FirmQuoteDTO convert(EODFirmQuoteDTO firmDTO) {
+
         FirmQuoteDTO firmQuoteTO = new FirmQuoteDTO();
+        firmQuoteTO.setOpen(firmDTO.getOpen());
+        firmQuoteTO.setDate(LocalDate.parse(firmDTO.getDate(), format1));
+        firmQuoteTO.setClose(firmDTO.getClose());
+        firmQuoteTO.setHigh(firmDTO.getHigh());
+        firmQuoteTO.setLow(firmDTO.getLow());
+        firmQuoteTO.setVolume(firmDTO.getVolume());
+        firmQuoteTO.setAdjustedClose(firmDTO.getAdjusted_close());
+        return firmQuoteTO;
+      }
+    };
+
+    modelMapper.addConverter(toUppercase);
+
+  }
+
+
+
+
+  @PostConstruct
+  void initExchangeFirmQuoteMapper() {
+
+    Converter<EODExchangeDTO, ExchangeFirmQuoteDTO> toUppercase = new AbstractConverter<EODExchangeDTO, ExchangeFirmQuoteDTO>() {
+
+      @Override
+      protected ExchangeFirmQuoteDTO convert(EODExchangeDTO firmDTO) {
+        ExchangeFirmQuoteDTO firmQuoteTO = new ExchangeFirmQuoteDTO();;
         firmQuoteTO.setName(firmDTO.getName());
         firmQuoteTO.setCode(firmDTO.getCode());
         firmQuoteTO.setExchangeShortName(firmDTO.getExchange_short_name());
@@ -81,11 +115,18 @@ public class FirmService {
 
   }
 
-  public FirmQuoteDTO saveEODMarketQuotes(FirmQuoteDTO firmsTO) {
+  public ExchangeFirmQuoteDTO saveEODMarketQuotes(ExchangeFirmQuoteDTO firmsTO) {
 
-    HttpEntity<FirmQuoteDTO> request = new HttpEntity<FirmQuoteDTO>(firmsTO);
+    HttpEntity<ExchangeFirmQuoteDTO> request = new HttpEntity<ExchangeFirmQuoteDTO>(firmsTO);
 
-    return restTemplate.postForObject(firmQuoteStr, request, FirmQuoteDTO.class);
+    return restTemplate.postForObject(firmQuoteStr, request, ExchangeFirmQuoteDTO.class);
+
+  }
+
+  public List<ExchangeFirmQuoteDTO> findAllByCodeOrderByDateAsc(String code) {
+
+    ResponseEntity<ExchangeFirmQuoteDTO[]> quotes = restTemplate.getForEntity(String.format("%s%s", firmQuoteStr, code), ExchangeFirmQuoteDTO[].class);
+    return Arrays.asList(quotes.getBody());
 
   }
 

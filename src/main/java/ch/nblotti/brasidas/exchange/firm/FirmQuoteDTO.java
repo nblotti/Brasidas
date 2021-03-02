@@ -4,29 +4,34 @@ import java.time.LocalDate;
 
 public class FirmQuoteDTO {
 
-
-  private Integer id;
-
-  String code;
-
-  LocalDate date;
-
-  String name;
-
-  String exchangeShortName;
-
-  String actualExchange;
-
-  long marketCapitalization;
-
-  float adjustedClose;
-
-  long volume;
+  private long id;
+  private LocalDate date;
+  private String code;
+  private float open;
+  private float high;
+  private float low;
+  private float close;
+  private float adjustedClose;
+  private long volume;
 
   public FirmQuoteDTO() {
-
   }
 
+  public long getId() {
+    return id;
+  }
+
+  public void setId(long id) {
+    this.id = id;
+  }
+
+  public void setDate(LocalDate date) {
+    this.date = date;
+  }
+
+  public LocalDate getDate() {
+    return date;
+  }
 
   public String getCode() {
     return code;
@@ -36,36 +41,36 @@ public class FirmQuoteDTO {
     this.code = code;
   }
 
-  public LocalDate getDate() {
-    return date;
+  public float getOpen() {
+    return open;
   }
 
-  public void setDate(LocalDate date) {
-    this.date = date;
+  public void setOpen(float open) {
+    this.open = open;
   }
 
-  public String getName() {
-    return name;
+  public float getHigh() {
+    return high;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public void setHigh(float high) {
+    this.high = high;
   }
 
-  public String getExchangeShortName() {
-    return exchangeShortName;
+  public float getLow() {
+    return low;
   }
 
-  public void setExchangeShortName(String exchangeShortName) {
-    this.exchangeShortName = exchangeShortName;
+  public void setLow(float low) {
+    this.low = low;
   }
 
-  public long getMarketCapitalization() {
-    return marketCapitalization;
+  public float getClose() {
+    return close;
   }
 
-  public void setMarketCapitalization(long marketCapitalization) {
-    this.marketCapitalization = marketCapitalization;
+  public void setClose(float close) {
+    this.close = close;
   }
 
   public float getAdjustedClose() {
@@ -84,11 +89,4 @@ public class FirmQuoteDTO {
     this.volume = volume;
   }
 
-  public String getActualExchange() {
-    return actualExchange;
-  }
-
-  public void setActualExchange(String actualExchange) {
-    this.actualExchange = actualExchange;
-  }
 }

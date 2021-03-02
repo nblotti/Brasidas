@@ -32,6 +32,9 @@ class EODExchangeRepository {
   private String marketCap;
 
 
+  @Value("${firm.quote.url}")
+  private String firmQuoteUrl;
+
   public String sharesHistoryStr = "$.[*]";
 
 
@@ -47,6 +50,17 @@ class EODExchangeRepository {
 
   @Autowired
   Cache cacheOne;
+
+
+  public List<EODFirmQuoteDTO> getExchangeQuoteByDate(LocalDate startDate, LocalDate endDate, String code, String exchange) {
+
+    String finalUrl = String.format(firmQuoteUrl, code, exchange, startDate.format(format1), endDate.format(format1),apiKey);
+
+    DocumentContext jsonContext = getDocumentContext(finalUrl);
+    List<EODFirmQuoteDTO> firms = Arrays.asList(jsonContext.read(sharesHistoryStr, EODFirmQuoteDTO[].class));
+
+    return firms;
+  }
 
 
   public List<EODExchangeDTO> getExchangeDataByDate(LocalDate runDate, String exchange) {

@@ -1,7 +1,6 @@
 package ch.nblotti.brasidas.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
-import ch.nblotti.brasidas.configuration.ConfigService;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsService;
 import ch.nblotti.brasidas.exchange.firminfos.FirmInfoService;
@@ -19,7 +18,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachine;
-import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
@@ -28,9 +26,7 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableStateMachine(name = "marketCleanerStateMachine")
@@ -53,7 +49,7 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
   private static final String ERROR_JOBS = "ERROR_JOBS";
 
   @Autowired
-  private ConfigService configService;
+  private LoadConfigService loadConfigService;
 
 
   public static final String EVENT_MESSAGE_DAY = "firms";
@@ -166,10 +162,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
         LocalDate runDate = (LocalDate) stateContext.getExtendedState().getVariables().get("runDate");
         Long id = (Long) stateContext.getExtendedState().getVariables().get("erroredId");
 
-        ConfigDTO errored = configService.findById(id);
+        ConfigDTO errored = loadConfigService.findById(id);
 
 
-        if (errored == null || !configService.isInGivenStatus(errored, JobStatus.ERROR)) {
+        if (errored == null || !loadConfigService.isInGivenStatus(errored, JobStatus.ERROR)) {
           message = MessageBuilder
             .withPayload(CLEANUP_EVENTS.ERROR)
             .build();
@@ -221,10 +217,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<CLEANUP_STA
 
         LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
         Long id = (Long) context.getExtendedState().getVariables().get("erroredId");
-        ConfigDTO errored = configService.findById(id);
+        ConfigDTO errored = loadConfigService.findById(id);
 
-        errored.setValue(String.format(ConfigService.CONFIG_DTO_VALUE_STR, configService.parseDate(errored).format(format1), configService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage),configService.retryCount(errored)+1));
-        configService.save(errored);
+        errored.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(errored).format(format1), loadConfigService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(errored)+1));
+        loadConfigService.save(errored);
 
         context.getStateMachine().sendEvent(CLEANUP_EVENTS.ERROR_TREATED);
 

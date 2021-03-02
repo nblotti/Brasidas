@@ -21,9 +21,8 @@ import java.util.List;
 import java.util.logging.Logger;
 
 
-@Service
-@Transactional
-public class ConfigService {
+
+public abstract class ConfigService {
 
 
   private static final Logger logger = Logger.getLogger("ConfigService");
@@ -93,63 +92,6 @@ public class ConfigService {
     return configDTOS;
   }
 
-  public boolean isInGivenStatus(ConfigDTO configDTO, JobStatus status) {
-    DocumentContext content = JsonPath.parse(configDTO.getValue());
-    JSONArray json = content.read(runningSatusStr);
-
-    String type = json.get(0).toString();
-
-    if (type != null && type.contains(status.toString()))
-      return true;
-    return false;
-  }
-
-  public LocalDate parseDate(ConfigDTO configDTO) {
-    DocumentContext content = JsonPath.parse(configDTO.getValue());
-    JSONArray json = content.read(runningDateStr);
-    String type = json.get(0).toString();
-    if (type != null)
-      return LocalDate.parse(type, format1);
-    return null;
-  }
-
-  public LocalDateTime parseUpdatedDate(ConfigDTO configDTO) {
-    DocumentContext content = JsonPath.parse(configDTO.getValue());
-    JSONArray json = content.read(updatedDateStr);
-    String type = json.get(0).toString();
-    if (type != null)
-      return LocalDateTime.parse(type, formatMessage);
-    return null;
-  }
-
-  public boolean isPartial(ConfigDTO configDTO) {
-    DocumentContext content = JsonPath.parse(configDTO.getValue());
-    JSONArray json = content.read(runningPartialStr);
-    String type = json.get(0).toString();
-    if (type != null && type.compareToIgnoreCase("true") == 0)
-      return true;
-    return false;
-  }
-
-
-  public int retryCount(ConfigDTO configDTO) {
-
-    DocumentContext content = JsonPath.parse(configDTO.getValue());
-    JSONArray json = content.read(shouldRetryStr);
-    String type = json.get(0).toString();
-
-    try {
-      return Integer.parseInt(type);
-    } catch (NumberFormatException nf) {
-      return 1;
-    }
-  }
-
-  public boolean shouldRetry(ConfigDTO configDTO) {
-
-        return retryCount(configDTO) < maxRetry;
-
-  }
 }
 
 
