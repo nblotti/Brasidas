@@ -55,6 +55,7 @@ public class JwtLocalToken {
     String responseStr = new String();
 
     while (responseStr.isEmpty()) {
+      logger.severe(String.format("Starting technical login"));
       try {
         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
         long nowMillis = System.currentTimeMillis();
@@ -93,6 +94,7 @@ public class JwtLocalToken {
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
+
       }
     }
     return responseStr;

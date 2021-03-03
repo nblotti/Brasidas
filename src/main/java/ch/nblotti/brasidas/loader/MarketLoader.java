@@ -184,7 +184,6 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
 
-
       }
     };
   }
@@ -207,7 +206,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
         ConfigDTO current = loadConfigService.findById(id);
 
-        current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current)+1));
+        current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current) + 1));
         loadConfigService.update(current);
 
 
@@ -337,10 +336,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           double percent = new BigDecimal(percentDone / 100).setScale(2, RoundingMode.HALF_UP).doubleValue();
 
           if (percent != 0) {
-            int minutesLeft = new BigDecimal((diff.toMinutes() / percent)- diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue() ;
-            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i,size, diff.toMinutes(), percent*100, minutesLeft));
+            int minutesLeft = new BigDecimal((diff.toMinutes() / percent) - diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue();
+            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
           } else {
-            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%).", exchange, i,size, diff.toMinutes(), percent*100));
+            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%).", exchange, i, size, diff.toMinutes(), percent * 100));
           }
         }
       }
@@ -364,14 +363,14 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current)));
         loadConfigService.update(current);
 
-        List<LocalDate> runDates = (List<LocalDate>) context.getExtendedState().getVariables().get("runDate");
+        LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
 
         LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
         LocalDateTime runTimeEnd = LocalDateTime.now();
 
         Duration diff = Duration.between(runTimeStart, runTimeEnd);
 
-        String process = String.format("Loading ended. %s days treated in %s minutes", runDates.size(), diff.toMinutes());
+        String process = String.format("Loading ended in %s minutes", diff.toMinutes());
         context.getStateMachine().sendEvent(LOADER_EVENTS.SUCCESS);
 
       }
@@ -406,19 +405,19 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       type = typeOpt.get();
 
     } catch (Exception e) {
-      logger.severe(String.format("%s - %s - loadAndSave",firm.getExchangeShortName(),firm.getCode()));
+      logger.severe(String.format("%s - %s - loadAndSave", firm.getExchangeShortName(), firm.getCode()));
       logger.severe(e.getMessage());
     }
 
 
     if (type.equals("Common Stock")) {
 
-
+      String currentCode = firm.getCode();
       try {
         FirmService firmService = beanFactory.getBean(FirmService.class);
         firmService.saveEODMarketQuotes(firm);
       } catch (Exception e) {
-        logger.severe(" FirmService.saveAll");
+        logger.severe(String.format("%s - %s -  Error saving quote", exchange, currentCode));
         logger.severe(e.getMessage());
       }
       try {
@@ -427,7 +426,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         if (info.isPresent())
           firmInfoService.save(info.get());
       } catch (Exception e) {
-        logger.severe(" firmInfoService.saveAll");
+        logger.severe(String.format("%s - %s -  Error saving info", exchange, currentCode));
         logger.severe(e.getMessage());
       }
       try {
@@ -436,7 +435,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         if (valuation.isPresent())
           firmValuationService.save(valuation.get());
       } catch (Exception e) {
-        logger.severe(" firmValuationService.saveAll");
+        logger.severe(String.format("%s - %s -  Error saving valuation", exchange, currentCode));
         logger.severe(e.getMessage());
       }
       try {
@@ -447,7 +446,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           firmSharesStatsService.save(shareStat.get());
 
       } catch (Exception e) {
-        logger.severe(" firmSharesStatsService.saveAll");
+        logger.severe(String.format("%s - %s -  Error saving shareStats", exchange, currentCode));
         logger.severe(e.getMessage());
       }
       try {
@@ -457,7 +456,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           firmHighlightsService.save(highlight.get());
 
       } catch (Exception e) {
-        logger.severe(" firmHighlightsService.saveAll");
+            logger.severe(String.format("%s - %s -  Error saving highlights", exchange, currentCode));
         logger.severe(e.getMessage());
       }
     }
