@@ -357,7 +357,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
 
 
-        Long id = (Long) context.getMessageHeader("loadId");
+        Long id = (Long) context.getExtendedState().getVariables().get("loadId");
 
         ConfigDTO current = loadConfigService.findById(id);
 
