@@ -212,8 +212,7 @@ public class LoaderService {
         List<ConfigDTO> configDTOS = localDates.stream().filter(current -> {
             if (current.getDayOfWeek() != DayOfWeek.SATURDAY
               && current.getDayOfWeek() != DayOfWeek.SUNDAY
-              && !wasDayBeforeRunDateDayDayOff(current)
-              && !isApiCallToElevated())
+              && !wasDayBeforeRunDateDayDayOff(current))
               return true;
             return false;
           }
@@ -243,6 +242,11 @@ public class LoaderService {
 
   @Scheduled(cron = "${loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
+
+
+    if(   isApiCallToElevated())
+      return;
+
 
     List<ConfigDTO> configDTOS = loadConfigService.getAll(LOADER, RUNNING_JOBS);
 
@@ -299,6 +303,7 @@ public class LoaderService {
       loadConfigService.update(current);
       return;
     }
+
 
     LocalDate runDate = loadConfigService.parseDate(current);
     Message<LOADER_EVENTS> message = MessageBuilder
