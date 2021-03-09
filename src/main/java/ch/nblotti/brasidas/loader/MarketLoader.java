@@ -337,7 +337,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
           if (percent != 0) {
             int minutesLeft = new BigDecimal((diff.toMinutes() / percent) - diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue();
-            logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%). Expected end time int %s minutes ", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
+            logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%). Expected end time in %s minutes ", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
           } else {
             logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%).", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100));
           }
