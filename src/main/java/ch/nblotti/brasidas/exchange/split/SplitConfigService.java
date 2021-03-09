@@ -3,7 +3,7 @@ package ch.nblotti.brasidas.exchange.split;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.ConfigService;
-import ch.nblotti.brasidas.loader.JobStatus;
+import ch.nblotti.brasidas.exchange.loader.JobStatus;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;

@@ -1,7 +1,6 @@
-package ch.nblotti.brasidas.loader;
+package ch.nblotti.brasidas.exchange.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
-import ch.nblotti.brasidas.exchange.split.SplitConfigService;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
@@ -13,7 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.listener.StateMachineListener;
+import org.springframework.statemachine.state.State;
+import org.springframework.statemachine.transition.Transition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -33,22 +36,18 @@ import java.util.stream.Collectors;
 
 
 @Service
-public class SplitService {
+public class LoaderService {
 
 
   private static final Logger logger = Logger.getLogger("LoaderService");
 
   private static final int WORKER_THREAD_POOL = 1;
   private static final String LOADER = "LOADER";
-  private static final String SPLIT_JOBS = "SPLIT_JOBS";
-
-
-  @Value("${loader.job.max.running.time}")
-  private long maxRunningTime;
+  private static final String RUNNING_JOBS = "RUNNING_JOBS";
 
 
   @Autowired
-  private SplitConfigService splitConfigService;
+  private LoadConfigService loadConfigService;
 
   @Autowired
   private DateTimeFormatter format1;
@@ -71,7 +70,13 @@ public class SplitService {
   private String apiLevelStr = "$..apiRequests";
 
   @Resource
-  private StateMachine<SPLIT_STATES, SPLIT_EVENTS> splitStateMachine;
+  private StateMachine<LOADER_STATES, LOADER_EVENTS> marketLoaderStateMachine;
+
+  @Resource
+  private StateMachine<CLEANUP_STATES, CLEANUP_EVENTS> marketCleanerStateMachine;
+
+  @Value("${loader.job.max.running.time}")
+  private long maxRunningTime;
 
   @Autowired
   private RestTemplate externalRestTemplate;
@@ -80,11 +85,76 @@ public class SplitService {
   @PostConstruct
   private void init() {
 
-    splitStateMachine.start();
+    marketLoaderStateMachine.addStateListener(new StateMachineListener<LOADER_STATES, LOADER_EVENTS>() {
+      @Override
+      public void stateChanged(State<LOADER_STATES, LOADER_EVENTS> state, State<LOADER_STATES, LOADER_EVENTS> state1) {
+
+      }
+
+      @Override
+      public void stateEntered(State<LOADER_STATES, LOADER_EVENTS> state) {
+
+        if (state == null)
+          logger.info(String.format("Loader - state changed. entering  %s ", state.getId()));
+      }
+
+      @Override
+      public void stateExited(State<LOADER_STATES, LOADER_EVENTS> state) {
+
+        if (state == null)
+          logger.info(String.format("Loader - state changed. exited  %s ", state.getId()));
+      }
+
+      @Override
+      public void eventNotAccepted(Message<LOADER_EVENTS> message) {
+
+      }
+
+      @Override
+      public void transition(Transition<LOADER_STATES, LOADER_EVENTS> transition) {
+
+      }
+
+      @Override
+      public void transitionStarted(Transition<LOADER_STATES, LOADER_EVENTS> transition) {
+
+      }
+
+      @Override
+      public void transitionEnded(Transition<LOADER_STATES, LOADER_EVENTS> transition) {
+
+      }
+
+      @Override
+      public void stateMachineStarted(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine) {
+      }
+
+      @Override
+      public void stateMachineStopped(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine) {
+
+      }
+
+      @Override
+      public void stateMachineError(StateMachine<LOADER_STATES, LOADER_EVENTS> stateMachine, Exception e) {
+
+      }
+
+      @Override
+      public void extendedStateChanged(Object o, Object o1) {
+
+      }
+
+      @Override
+      public void stateContext(StateContext<LOADER_STATES, LOADER_EVENTS> stateContext) {
+
+      }
+    });
+    marketLoaderStateMachine.start();
+    marketCleanerStateMachine.start();
   }
 
 
-  public void startSplit(Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay) {
+  public void startLoad(Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay, Boolean runPartial) {
 
 
     Message<LOADER_EVENTS> message;
@@ -142,8 +212,7 @@ public class SplitService {
         List<ConfigDTO> configDTOS = localDates.stream().filter(current -> {
             if (current.getDayOfWeek() != DayOfWeek.SATURDAY
               && current.getDayOfWeek() != DayOfWeek.SUNDAY
-              && !wasDayBeforeRunDateDayDayOff(current)
-              && !isApiCallToElevated())
+              && !wasDayBeforeRunDateDayDayOff(current))
               return true;
             return false;
           }
@@ -151,41 +220,48 @@ public class SplitService {
 
           ConfigDTO configDTO = new ConfigDTO();
           configDTO.setCode(LOADER);
-          configDTO.setType(SPLIT_JOBS);
-          configDTO.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), 0));
+          configDTO.setType(RUNNING_JOBS);
+          configDTO.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage),0));
           return configDTO;
 
         }).collect(Collectors.toList());
 
-        splitConfigService.saveAll(configDTOS);
+        loadConfigService.saveAll(configDTOS);
       }
     }
   }
 
 
-  @Scheduled(cron = "${split.daily.cron.expression}")
+  @Scheduled(cron = "${loader.daily.cron.expression}")
   @Transactional
   public void scheduleDailyTask() {
 
     LocalDate runDate = LocalDate.now().minusDays(1);
-    startSplit(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth());
+    startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
   }
 
   @Scheduled(cron = "${loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
 
-    List<ConfigDTO> configDTOS = splitConfigService.getAll(LOADER, SPLIT_JOBS);
+
+    if(   isApiCallToElevated())
+      return;
+
+    if(true)
+    return;
+
+    List<ConfigDTO> configDTOS = loadConfigService.getAll(LOADER, RUNNING_JOBS);
 
     List<ConfigDTO> running = getJobsInGivenStatus(configDTOS, JobStatus.RUNNING);
     if (!running.isEmpty()) {
       running.stream().forEach(currentRunning -> {
         if (isHanging(currentRunning)) {
-          if (splitConfigService.shouldRetry(currentRunning))
-            currentRunning.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, splitConfigService.parseDate(currentRunning).format(format1), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), splitConfigService.retryCount(currentRunning)));
+          if(loadConfigService.shouldRetry(currentRunning))
+            currentRunning.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(currentRunning).format(format1), loadConfigService.isPartial(currentRunning), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(currentRunning)));
           else
-            currentRunning.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, splitConfigService.parseDate(currentRunning).format(format1), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), splitConfigService.retryCount(currentRunning)));
+            currentRunning.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(currentRunning).format(format1), loadConfigService.isPartial(currentRunning), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(currentRunning)));
 
-          splitConfigService.update(currentRunning);
+          loadConfigService.update(currentRunning);
         }
 
       });
@@ -198,21 +274,21 @@ public class SplitService {
 
       errored.stream().forEach(currentErrored -> {
 
-        if (!splitConfigService.shouldRetry(currentErrored)) {
-          currentErrored.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, splitConfigService.parseDate(currentErrored).format(format1), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), splitConfigService.retryCount(currentErrored)));
-          splitConfigService.update(currentErrored);
+        if(!loadConfigService.shouldRetry(currentErrored)) {
+          currentErrored.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(currentErrored).format(format1), loadConfigService.isPartial(currentErrored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(currentErrored) ));
+          loadConfigService.update(currentErrored);
           return;
         }
-        LocalDate runDate = splitConfigService.parseDate(currentErrored);
+        LocalDate runDate = loadConfigService.parseDate(currentErrored);
 
-        Message<SPLIT_EVENTS> message = MessageBuilder
-          .withPayload(SPLIT_EVENTS.EVENT_RECEIVED)
+        Message<CLEANUP_EVENTS> message = MessageBuilder
+          .withPayload(CLEANUP_EVENTS.EVENT_RECEIVED)
           .setHeader("runDate", runDate)
-          .setHeader("splitId", currentErrored.getId())
+          .setHeader("erroredId", currentErrored.getId())
           .build();
 
 
-        splitStateMachine.sendEvent(message);
+        marketCleanerStateMachine.sendEvent(message);
         return;
 
       });
@@ -224,31 +300,33 @@ public class SplitService {
 
     ConfigDTO current = toRun.iterator().next();
 
-    if (!splitConfigService.shouldRetry(current)) {
-      current.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, splitConfigService.parseDate(current).format(format1), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), splitConfigService.retryCount(current)));
-      splitConfigService.update(current);
+    if(!loadConfigService.shouldRetry(current)) {
+      current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current) ));
+      loadConfigService.update(current);
       return;
     }
 
-    LocalDate runDate = splitConfigService.parseDate(current);
-    Message<SPLIT_EVENTS> message = MessageBuilder
-      .withPayload(SPLIT_EVENTS.EVENT_RECEIVED)
+
+    LocalDate runDate = loadConfigService.parseDate(current);
+    Message<LOADER_EVENTS> message = MessageBuilder
+      .withPayload(LOADER_EVENTS.EVENT_RECEIVED)
       .setHeader("runDate", runDate)
-      .setHeader("splitId", current.getId())
+      .setHeader("loadId", current.getId())
       .build();
 
-    splitStateMachine.sendEvent(message);
+    marketLoaderStateMachine.sendEvent(message);
 
   }
 
   private boolean isHanging(ConfigDTO current) {
 
-    LocalDateTime lateUpdate = splitConfigService.parseUpdatedDate(current);
+    LocalDateTime lateUpdate = loadConfigService.parseUpdatedDate(current);
     LocalDateTime now = LocalDateTime.now();
     long minutes = ChronoUnit.MINUTES.between(lateUpdate, now);
 
     return minutes >= maxRunningTime;
   }
+
 
 
   private void cleanup(ConfigDTO configDTO) {
@@ -258,7 +336,7 @@ public class SplitService {
 
     return configDTOS.stream().filter(configDTO -> {
 
-      return splitConfigService.isInGivenStatus(configDTO, status);
+      return loadConfigService.isInGivenStatus(configDTO, status);
     }).collect(Collectors.toList());
 
   }

@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.loader;
+package ch.nblotti.brasidas.exchange.loader;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

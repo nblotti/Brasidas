@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.loader;
+package ch.nblotti.brasidas.exchange.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
@@ -9,7 +9,6 @@ import ch.nblotti.brasidas.exchange.split.FirmSplitService;
 import ch.nblotti.brasidas.exchange.split.SplitConfigService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;

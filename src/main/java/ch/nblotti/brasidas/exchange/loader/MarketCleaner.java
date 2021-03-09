@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.loader;
+package ch.nblotti.brasidas.exchange.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmService;

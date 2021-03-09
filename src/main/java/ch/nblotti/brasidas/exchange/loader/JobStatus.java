@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.loader;
+package ch.nblotti.brasidas.exchange.loader;
 
 public enum JobStatus {
   ERROR,
