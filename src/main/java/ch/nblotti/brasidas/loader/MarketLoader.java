@@ -313,7 +313,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
     FirmService firmService = beanFactory.getBean(FirmService.class);
     LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
-
+    LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
 
     logger.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
     List<ExchangeFirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
@@ -328,7 +328,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         double percentDone = (i * 100 / size);
         if (i % 100 == 0) {
 
-          LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
+
           LocalDateTime runTimeEnd = LocalDateTime.now();
 
           Duration diff = Duration.between(runTimeStart, runTimeEnd);
@@ -337,16 +337,19 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
           if (percent != 0) {
             int minutesLeft = new BigDecimal((diff.toMinutes() / percent) - diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue();
-            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%). Expected end time int %s minutes ", exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
+            logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%). Expected end time int %s minutes ", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
           } else {
-            logger.info(String.format("%s - %s/%s treated in %s minutes. (%s%%).", exchange, i, size, diff.toMinutes(), percent * 100));
+            logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%).", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100));
           }
         }
       }
 
     }
 
-    logger.info(String.format("%s - %s - End load process", exchange, runDate.format(format1)));
+    LocalDateTime runTimeEnd = LocalDateTime.now();
+    Duration diff = Duration.between(runTimeStart, runTimeEnd);
+
+    logger.info(String.format("%s - %s - End load process. %s treated in %s minutes", runDate.format(format1), exchange, size, diff.toMinutes()));
   }
 
   @Bean
@@ -456,7 +459,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           firmHighlightsService.save(highlight.get());
 
       } catch (Exception e) {
-            logger.severe(String.format("%s - %s -  Error saving highlights", exchange, currentCode));
+        logger.severe(String.format("%s - %s -  Error saving highlights", exchange, currentCode));
         logger.severe(e.getMessage());
       }
     }
