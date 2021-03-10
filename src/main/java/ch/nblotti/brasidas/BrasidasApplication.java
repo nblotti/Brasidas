@@ -3,6 +3,7 @@ package ch.nblotti.brasidas;
 import ch.nblotti.brasidas.security.JwtLocalToken;
 import ch.nblotti.brasidas.security.SecurityConstants;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -41,11 +42,10 @@ import java.util.logging.Logger;
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
-
+@Slf4j
 @PropertySource(value = "classpath:override.properties", ignoreResourceNotFound = true)
 public class BrasidasApplication {
 
-  private static final Logger logger = Logger.getLogger("BrasidasApplication");
 
   public static void main(String[] args) {
     SpringApplication.run(BrasidasApplication.class, args);
@@ -132,8 +132,8 @@ public class BrasidasApplication {
             try {
               bearer = jwtLocalToken.getJWT();
             } catch (Exception exception) {
-              logger.severe("Error creating jwt token, retrying");
-              logger.severe(exception.getMessage());
+              log.error("Error creating jwt token, retrying");
+              log.error(exception.getMessage());
             }
           }
           httpRequest.getHeaders().add(SecurityConstants.TOKEN_HEADER, bearer);
@@ -143,10 +143,10 @@ public class BrasidasApplication {
           response = clientHttpRequestExecution.execute(httpRequest, bytes);
         } catch (IOException exception) {
           try {
-            logger.severe("Error sending request, retrying in 30s");
+            log.error("Error sending request, retrying in 30s");
             Thread.sleep(30000);
           } catch (InterruptedException e) {
-            logger.severe("Sleep time interrupted have not waited 30s before retry");
+            log.error("Sleep time interrupted have not waited 30s before retry");
           }
         }
         while (response == null || (HttpStatus.UNAUTHORIZED == response.getStatusCode() || HttpStatus.FORBIDDEN == response.getStatusCode())) {
@@ -157,9 +157,9 @@ public class BrasidasApplication {
 
             response = clientHttpRequestExecution.execute(httpRequest, bytes);
           } catch (Exception exception) {
-            logger.severe("Error sending request");
+            log.error("Error sending request");
 
-            logger.severe(exception.getMessage());
+            log.error(exception.getMessage());
           }
         }
 

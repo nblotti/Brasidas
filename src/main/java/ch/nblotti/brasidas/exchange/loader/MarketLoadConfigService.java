@@ -3,8 +3,10 @@ package ch.nblotti.brasidas.exchange.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.ConfigService;
+import ch.nblotti.brasidas.configuration.JobStatus;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,10 +21,10 @@ import java.util.logging.Logger;
 
 @Service
 @Transactional
-public class LoadConfigService extends ConfigService {
+@Slf4j
+public class MarketLoadConfigService extends ConfigService {
 
 
-  private static final Logger logger = Logger.getLogger("LoadConfigService");
   public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\",\"retry\":\"%s\"}";
 
   private String runningSatusStr = "$..status";

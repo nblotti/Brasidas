@@ -1,6 +1,7 @@
 package ch.nblotti.brasidas.exchange.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
+import ch.nblotti.brasidas.configuration.JobStatus;
 import ch.nblotti.brasidas.exchange.firm.EODFirmFundamentalRepository;
 import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
@@ -12,6 +13,7 @@ import ch.nblotti.brasidas.exchange.firmsharestats.FirmShareStatsDTO;
 import ch.nblotti.brasidas.exchange.firmsharestats.FirmSharesStatsService;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationDTO;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,11 +44,11 @@ import java.util.*;
 import java.util.logging.Logger;
 
 @Configuration
+@Slf4j
 @EnableStateMachine(name = "marketLoaderStateMachine")
-public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATES, LOADER_EVENTS> {
+public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> {
 
 
-  private static final Logger logger = Logger.getLogger("DailyLoaderStateMachine");
 
   private final static String EXCHANGE_NYSE = "NYSE";
   private final static String EXCHANGE_NASDAQ = "NASDAQ";
@@ -62,7 +64,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   private static final String RUNNING_JOBS = "RUNNING_JOBS";
 
   @Autowired
-  private LoadConfigService loadConfigService;
+  private MarketLoadConfigService marketLoadConfigService;
 
 
   public static final String EVENT_MESSAGE_DAY = "firms";
@@ -89,7 +91,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   @Override
   public void configure(
     StateMachineConfigurationConfigurer
-      <LOADER_STATES, LOADER_EVENTS> config) throws Exception {
+      <MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> config) throws Exception {
 
     config.withConfiguration()
       .autoStartup(false)
@@ -98,90 +100,90 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
   @Override
-  public void configure(StateMachineStateConfigurer<LOADER_STATES, LOADER_EVENTS> states) throws Exception {
+  public void configure(StateMachineStateConfigurer<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> states) throws Exception {
     states.withStates()
-      .initial(LOADER_STATES.WAITING_EVENT)
-      .state(LOADER_STATES.READY, initalAction())
-      .state(LOADER_STATES.GET_DATES, filterRunDates())
-      .fork(LOADER_STATES.LOAD_FORK)
-      .state(LOADER_STATES.LOAD)
-      .join(LOADER_STATES.LOAD_JOIN)
-      .choice(LOADER_STATES.CHOICE)
-      .state(LOADER_STATES.CLEANUP, cleanup())
-      .state(LOADER_STATES.ERROR_STATE, errorAction())
-      .end(LOADER_STATES.DONE)
-      .end(LOADER_STATES.ERROR)
+      .initial(MARKET_LOADER_STATES.WAITING_EVENT)
+      .state(MARKET_LOADER_STATES.READY, initalAction())
+      .state(MARKET_LOADER_STATES.GET_DATES, filterRunDates())
+      .fork(MARKET_LOADER_STATES.LOAD_FORK)
+      .state(MARKET_LOADER_STATES.LOAD)
+      .join(MARKET_LOADER_STATES.LOAD_JOIN)
+      .choice(MARKET_LOADER_STATES.CHOICE)
+      .state(MARKET_LOADER_STATES.CLEANUP, cleanup())
+      .state(MARKET_LOADER_STATES.ERROR_STATE, errorAction())
+      .end(MARKET_LOADER_STATES.DONE)
+      .end(MARKET_LOADER_STATES.ERROR)
       .and()
       .withStates()
-      .parent(LOADER_STATES.LOAD)
-      .initial(LOADER_STATES.LOAD_NYSE, loadNYSE())
-      .end(LOADER_STATES.LOAD_NYSE_END)
+      .parent(MARKET_LOADER_STATES.LOAD)
+      .initial(MARKET_LOADER_STATES.LOAD_NYSE, loadNYSE())
+      .end(MARKET_LOADER_STATES.LOAD_NYSE_END)
       .and()
       .withStates()
-      .parent(LOADER_STATES.LOAD)
-      .initial(LOADER_STATES.LOAD_NASDAQ, loadNASDAQ())
-      .end(LOADER_STATES.LOAD_NASDAQ_END);
+      .parent(MARKET_LOADER_STATES.LOAD)
+      .initial(MARKET_LOADER_STATES.LOAD_NASDAQ, loadNASDAQ())
+      .end(MARKET_LOADER_STATES.LOAD_NASDAQ_END);
 
 
   }
 
 
   @Override
-  public void configure(StateMachineTransitionConfigurer<LOADER_STATES, LOADER_EVENTS> transitions) throws Exception {
+  public void configure(StateMachineTransitionConfigurer<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> transitions) throws Exception {
     transitions.withExternal()
-      .source(LOADER_STATES.WAITING_EVENT).target(LOADER_STATES.READY)
+      .source(MARKET_LOADER_STATES.WAITING_EVENT).target(MARKET_LOADER_STATES.READY)
       .and()
       .withExternal()
-      .source(LOADER_STATES.READY).target(LOADER_STATES.GET_DATES).event(LOADER_EVENTS.EVENT_RECEIVED)
+      .source(MARKET_LOADER_STATES.READY).target(MARKET_LOADER_STATES.GET_DATES).event(MARKET_LOADER_EVENTS.EVENT_RECEIVED)
       .and()
       .withExternal()
-      .source(LOADER_STATES.GET_DATES).target(LOADER_STATES.LOAD_FORK).event(LOADER_EVENTS.SUCCESS)
+      .source(MARKET_LOADER_STATES.GET_DATES).target(MARKET_LOADER_STATES.LOAD_FORK).event(MARKET_LOADER_EVENTS.SUCCESS)
       .and()
       .withExternal()
-      .source(LOADER_STATES.GET_DATES).target(LOADER_STATES.DONE).event(LOADER_EVENTS.ERROR)
+      .source(MARKET_LOADER_STATES.GET_DATES).target(MARKET_LOADER_STATES.DONE).event(MARKET_LOADER_EVENTS.ERROR)
       .and()
       .withFork()
-      .source(LOADER_STATES.LOAD_FORK).target(LOADER_STATES.LOAD)
+      .source(MARKET_LOADER_STATES.LOAD_FORK).target(MARKET_LOADER_STATES.LOAD)
       .and()
       .withExternal()
-      .source(LOADER_STATES.LOAD_NASDAQ).target(LOADER_STATES.LOAD_NASDAQ_END)
+      .source(MARKET_LOADER_STATES.LOAD_NASDAQ).target(MARKET_LOADER_STATES.LOAD_NASDAQ_END)
       .and()
       .withExternal()
-      .source(LOADER_STATES.LOAD_NYSE).target(LOADER_STATES.LOAD_NYSE_END)
+      .source(MARKET_LOADER_STATES.LOAD_NYSE).target(MARKET_LOADER_STATES.LOAD_NYSE_END)
       .and()
       .withJoin()
-      .source(LOADER_STATES.LOAD).target(LOADER_STATES.LOAD_JOIN)
+      .source(MARKET_LOADER_STATES.LOAD).target(MARKET_LOADER_STATES.LOAD_JOIN)
       .and()
       .withExternal()
-      .source(LOADER_STATES.LOAD_JOIN).target(LOADER_STATES.CHOICE)
+      .source(MARKET_LOADER_STATES.LOAD_JOIN).target(MARKET_LOADER_STATES.CHOICE)
       .and()
       .withChoice()
-      .source(LOADER_STATES.CHOICE)
-      .first(LOADER_STATES.ERROR_STATE, tasksChoiceGuard())
-      .last(LOADER_STATES.CLEANUP)
+      .source(MARKET_LOADER_STATES.CHOICE)
+      .first(MARKET_LOADER_STATES.ERROR_STATE, tasksChoiceGuard())
+      .last(MARKET_LOADER_STATES.CLEANUP)
       .and()
       .withExternal()
-      .source(LOADER_STATES.CLEANUP).target(LOADER_STATES.WAITING_EVENT).event(LOADER_EVENTS.SUCCESS)
+      .source(MARKET_LOADER_STATES.CLEANUP).target(MARKET_LOADER_STATES.WAITING_EVENT).event(MARKET_LOADER_EVENTS.SUCCESS)
       .and()
       .withExternal()
-      .source(LOADER_STATES.CLEANUP).target(LOADER_STATES.ERROR_STATE).event(LOADER_EVENTS.ERROR)
+      .source(MARKET_LOADER_STATES.CLEANUP).target(MARKET_LOADER_STATES.ERROR_STATE).event(MARKET_LOADER_EVENTS.ERROR)
       .and()
       .withExternal()
-      .source(LOADER_STATES.ERROR_STATE).target(LOADER_STATES.WAITING_EVENT).event(LOADER_EVENTS.ERROR_TREATED)
+      .source(MARKET_LOADER_STATES.ERROR_STATE).target(MARKET_LOADER_STATES.WAITING_EVENT).event(MARKET_LOADER_EVENTS.ERROR_TREATED)
       .and()
       .withExternal()
-      .source(LOADER_STATES.ERROR_STATE).target(LOADER_STATES.ERROR).event(LOADER_EVENTS.ERROR)
+      .source(MARKET_LOADER_STATES.ERROR_STATE).target(MARKET_LOADER_STATES.ERROR).event(MARKET_LOADER_EVENTS.ERROR)
 
     ;
   }
 
 
   @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> initalAction() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
+  public Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> initalAction() {
+    return new Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
 
       @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+      public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
 
       }
@@ -190,13 +192,13 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
 
   @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> filterRunDates() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
+  public Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> filterRunDates() {
+    return new Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
 
       @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+      public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
-        Message<LOADER_EVENTS> message;
+        Message<MARKET_LOADER_EVENTS> message;
 
         LocalDate runDate = (LocalDate) context.getMessageHeader("runDate");
         Long id = (Long) context.getMessageHeader("loadId");
@@ -204,21 +206,21 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
 
 
-        ConfigDTO current = loadConfigService.findById(id);
+        ConfigDTO current = marketLoadConfigService.findById(id);
 
-        current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current) + 1));
-        loadConfigService.update(current);
+        current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), marketLoadConfigService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current) + 1));
+        marketLoadConfigService.update(current);
 
 
         if (runDate == null) {
           message = MessageBuilder
-            .withPayload(LOADER_EVENTS.ERROR)
+            .withPayload(MARKET_LOADER_EVENTS.ERROR)
             .build();
         } else {
           context.getExtendedState().getVariables().put("runDate", runDate);
 
           message = MessageBuilder
-            .withPayload(LOADER_EVENTS.SUCCESS)
+            .withPayload(MARKET_LOADER_EVENTS.SUCCESS)
             .build();
         }
         context.getStateMachine().sendEvent(message);
@@ -233,11 +235,11 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
 
   @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> loadNYSE() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
+  public Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> loadNYSE() {
+    return new Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
 
       @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> stateContext) {
+      public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> stateContext) {
 
         Map<Object, Object> variables = stateContext.getExtendedState().getVariables();
 
@@ -245,7 +247,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           loadMarket(MarketLoader.this.EXCHANGE_NYSE, stateContext);
         } catch (Exception ex) {
           variables.put("T1", false);
-          logger.severe(ex.toString());
+          log.error(ex.toString());
           return;
         }
         variables.put("T1", true);
@@ -255,10 +257,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
   @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> loadNASDAQ() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
+  public Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> loadNASDAQ() {
+    return new Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
       @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> stateContext) {
+      public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> stateContext) {
 
         Map<Object, Object> variables = stateContext.getExtendedState().getVariables();
 
@@ -266,7 +268,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           loadMarket(MarketLoader.this.EXCHANGE_NASDAQ, stateContext);
         } catch (Exception ex) {
           variables.put("T2", false);
-          logger.severe(ex.toString());
+          log.error(ex.toString());
           return;
         }
         variables.put("T2", true);
@@ -276,11 +278,11 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
   @Bean
-  public Guard<LOADER_STATES, LOADER_EVENTS> tasksChoiceGuard() {
-    return new Guard<LOADER_STATES, LOADER_EVENTS>() {
+  public Guard<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> tasksChoiceGuard() {
+    return new Guard<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
 
       @Override
-      public boolean evaluate(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+      public boolean evaluate(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
         Map<Object, Object> variables = context.getExtendedState().getVariables();
         return !(ObjectUtils.nullSafeEquals(variables.get("T1"), true)
           && ObjectUtils.nullSafeEquals(variables.get("T2"), true));
@@ -289,33 +291,33 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
   @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> errorAction() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
+  public Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> errorAction() {
+    return new Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
 
       @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+      public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
 
         Long id = (Long) context.getExtendedState().getVariables().get("loadId");
 
-        ConfigDTO errored = loadConfigService.findById(id);
+        ConfigDTO errored = marketLoadConfigService.findById(id);
 
-        errored.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(errored).format(format1), loadConfigService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(errored)));
-        loadConfigService.update(errored);
+        errored.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(errored).format(format1), marketLoadConfigService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(errored)));
+        marketLoadConfigService.update(errored);
 
-        context.getStateMachine().sendEvent(LOADER_EVENTS.ERROR_TREATED);
+        context.getStateMachine().sendEvent(MARKET_LOADER_EVENTS.ERROR_TREATED);
       }
     };
   }
 
-  public void loadMarket(final String exchange, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+  public void loadMarket(final String exchange, StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
 
     FirmService firmService = beanFactory.getBean(FirmService.class);
     LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
     LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
 
-    logger.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
+    log.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
     List<ExchangeFirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
 
     int size = firmsForGivenExchange.size();
@@ -337,9 +339,9 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
 
           if (percent != 0) {
             int minutesLeft = new BigDecimal((diff.toMinutes() / percent) - diff.toMinutes()).setScale(2, RoundingMode.HALF_UP).intValue();
-            logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%). Expected end time in %s minutes ", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
+            log.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%). Expected end time in %s minutes ", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100, minutesLeft));
           } else {
-            logger.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%).", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100));
+            log.info(String.format("%s - %s - %s/%s treated in %s minutes. (%s%%).", runDate.format(format1), exchange, i, size, diff.toMinutes(), percent * 100));
           }
         }
       }
@@ -349,22 +351,22 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
     LocalDateTime runTimeEnd = LocalDateTime.now();
     Duration diff = Duration.between(runTimeStart, runTimeEnd);
 
-    logger.info(String.format("%s - %s - End load process. %s treated in %s minutes", runDate.format(format1), exchange, size, diff.toMinutes()));
+    log.info(String.format("%s - %s - End load process. %s treated in %s minutes", runDate.format(format1), exchange, size, diff.toMinutes()));
   }
 
   @Bean
-  public Action<LOADER_STATES, LOADER_EVENTS> cleanup() {
-    return new Action<LOADER_STATES, LOADER_EVENTS>() {
+  public Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> cleanup() {
+    return new Action<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS>() {
       @Override
-      public void execute(StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+      public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
 
         Long id = (Long) context.getExtendedState().getVariables().get("loadId");
 
-        ConfigDTO current = loadConfigService.findById(id);
+        ConfigDTO current = marketLoadConfigService.findById(id);
 
-        current.setValue(String.format(LoadConfigService.CONFIG_DTO_VALUE_STR, loadConfigService.parseDate(current).format(format1), loadConfigService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), loadConfigService.retryCount(current)));
-        loadConfigService.update(current);
+        current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), marketLoadConfigService.isPartial(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current)));
+        marketLoadConfigService.update(current);
 
         LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
 
@@ -374,7 +376,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         Duration diff = Duration.between(runTimeStart, runTimeEnd);
 
         String process = String.format("Loading ended in %s minutes", diff.toMinutes());
-        context.getStateMachine().sendEvent(LOADER_EVENTS.SUCCESS);
+        context.getStateMachine().sendEvent(MARKET_LOADER_EVENTS.SUCCESS);
 
       }
     };
@@ -389,14 +391,14 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
   }
 
   public void finalAction(LocalDate runDate) {
-    logger.info(String.format("%s - Fin du traitement", runDate.format(format1)));
+    log.info(String.format("%s - Fin du traitement", runDate.format(format1)));
   }
 
 
-  private void loadAndSave(String exchange, ExchangeFirmQuoteDTO firm, LocalDate runDate, StateContext<LOADER_STATES, LOADER_EVENTS> context) {
+  private void loadAndSave(String exchange, ExchangeFirmQuoteDTO firm, LocalDate runDate, StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
     String type = "";
-    if (LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
+    if (MARKET_LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
       return;
 
     try {
@@ -408,8 +410,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
       type = typeOpt.get();
 
     } catch (Exception e) {
-      logger.severe(String.format("%s - %s - loadAndSave", firm.getExchangeShortName(), firm.getCode()));
-      logger.severe(e.getMessage());
+      log.error(String.format("%s - %s - loadAndSave", firm.getExchangeShortName(), firm.getCode()));
+      log.error(e.getMessage());
     }
 
 
@@ -420,8 +422,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         FirmService firmService = beanFactory.getBean(FirmService.class);
         firmService.saveEODMarketQuotes(firm);
       } catch (Exception e) {
-        logger.severe(String.format("%s - %s -  Error saving quote", exchange, currentCode));
-        logger.severe(e.getMessage());
+        log.error(String.format("%s - %s -  Error saving quote", exchange, currentCode));
+        log.error(e.getMessage());
       }
       try {
         FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
@@ -429,8 +431,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         if (info.isPresent())
           firmInfoService.save(info.get());
       } catch (Exception e) {
-        logger.severe(String.format("%s - %s -  Error saving info", exchange, currentCode));
-        logger.severe(e.getMessage());
+        log.error(String.format("%s - %s -  Error saving info", exchange, currentCode));
+        log.error(e.getMessage());
       }
       try {
         FirmValuationService firmValuationService = beanFactory.getBean(FirmValuationService.class);
@@ -438,8 +440,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
         if (valuation.isPresent())
           firmValuationService.save(valuation.get());
       } catch (Exception e) {
-        logger.severe(String.format("%s - %s -  Error saving valuation", exchange, currentCode));
-        logger.severe(e.getMessage());
+        log.error(String.format("%s - %s -  Error saving valuation", exchange, currentCode));
+        log.error(e.getMessage());
       }
       try {
         FirmSharesStatsService firmSharesStatsService = beanFactory.getBean(FirmSharesStatsService.class);
@@ -449,8 +451,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           firmSharesStatsService.save(shareStat.get());
 
       } catch (Exception e) {
-        logger.severe(String.format("%s - %s -  Error saving shareStats", exchange, currentCode));
-        logger.severe(e.getMessage());
+        log.error(String.format("%s - %s -  Error saving shareStats", exchange, currentCode));
+        log.error(e.getMessage());
       }
       try {
         FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
@@ -459,8 +461,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<LOADER_STATE
           firmHighlightsService.save(highlight.get());
 
       } catch (Exception e) {
-        logger.severe(String.format("%s - %s -  Error saving highlights", exchange, currentCode));
-        logger.severe(e.getMessage());
+        log.error(String.format("%s - %s -  Error saving highlights", exchange, currentCode));
+        log.error(e.getMessage());
       }
     }
 

@@ -1,12 +1,14 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.index.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
-import ch.nblotti.brasidas.configuration.JobStatus;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsService;
 import ch.nblotti.brasidas.exchange.firminfos.FirmInfoService;
 import ch.nblotti.brasidas.exchange.firmsharestats.FirmSharesStatsService;
 import ch.nblotti.brasidas.exchange.firmvaluation.FirmValuationService;
+import ch.nblotti.brasidas.exchange.loader.MARKET_CLEANUP_EVENTS;
+import ch.nblotti.brasidas.exchange.loader.MARKET_CLEANUP_STATES;
+import ch.nblotti.brasidas.configuration.JobStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +30,12 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.logging.Logger;
 
 @Configuration
-@EnableStateMachine(name = "marketCleanerStateMachine")
 @Slf4j
-public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> {
+@EnableStateMachine(name = "indexCleanerStateMachine")
+public class IndexCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> {
+
 
 
   private final static String EXCHANGE_NYSE = "NYSE";
@@ -50,7 +52,7 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
   private static final String ERROR_JOBS = "ERROR_JOBS";
 
   @Autowired
-  private MarketLoadConfigService marketLoadConfigService;
+  private LoadIndexConfigService loadIndexConfigService;
 
 
   public static final String EVENT_MESSAGE_DAY = "firms";
@@ -76,9 +78,9 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
     states.withStates()
       .initial(MARKET_CLEANUP_STATES.WAITING_EVENT)
       .state(MARKET_CLEANUP_STATES.READY)
-      .state(MARKET_CLEANUP_STATES.GET_DATES, filterCleanupRunDates())
-      .state(MARKET_CLEANUP_STATES.DELETE_STATE, deleteAction())
-      .state(MARKET_CLEANUP_STATES.ERROR_STATE, errorCleanupAction())
+      .state(MARKET_CLEANUP_STATES.GET_DATES, filterIndexCleanupRunDates())
+      .state(MARKET_CLEANUP_STATES.DELETE_STATE, deleteIndexAction())
+      .state(MARKET_CLEANUP_STATES.ERROR_STATE, errorCleanupIndexAction())
       .end(MARKET_CLEANUP_STATES.DONE)
       .end(MARKET_CLEANUP_STATES.CANCELED);
 
@@ -123,7 +125,7 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
 
 
   @Bean
-  public Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> filterCleanupRunDates() {
+  public Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> filterIndexCleanupRunDates() {
     return new Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS>() {
 
       @Override
@@ -153,7 +155,7 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
   }
 
   @Bean
-  public Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> deleteAction() {
+  public Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> deleteIndexAction() {
     return new Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS>() {
 
       @Override
@@ -163,10 +165,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
         LocalDate runDate = (LocalDate) stateContext.getExtendedState().getVariables().get("runDate");
         Long id = (Long) stateContext.getExtendedState().getVariables().get("erroredId");
 
-        ConfigDTO errored = marketLoadConfigService.findById(id);
+        ConfigDTO errored = loadIndexConfigService.findById(id);
 
 
-        if (errored == null || !marketLoadConfigService.isInGivenStatus(errored, JobStatus.ERROR)) {
+        if (errored == null || !loadIndexConfigService.isInGivenStatus(errored, JobStatus.ERROR)) {
           message = MessageBuilder
             .withPayload(MARKET_CLEANUP_EVENTS.ERROR)
             .build();
@@ -192,8 +194,8 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
             FirmHighlightsService firmHighlightsService = beanFactory.getBean(FirmHighlightsService.class);
             firmHighlightsService.deleteByDate(runDate);
 
-            errored.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(errored).format(format1), marketLoadConfigService.isPartial(errored), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(errored)));
-            marketLoadConfigService.save(errored);
+            errored.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(errored).format(format1), loadIndexConfigService.isPartial(errored), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(errored)));
+            loadIndexConfigService.save(errored);
 
             message = MessageBuilder
               .withPayload(MARKET_CLEANUP_EVENTS.SUCCESS).build();
@@ -212,7 +214,7 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
   }
 
   @Bean
-  public Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> errorCleanupAction() {
+  public Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS> errorCleanupIndexAction() {
     return new Action<MARKET_CLEANUP_STATES, MARKET_CLEANUP_EVENTS>() {
 
       @Override
@@ -220,10 +222,10 @@ public class MarketCleaner extends EnumStateMachineConfigurerAdapter<MARKET_CLEA
 
         LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
         Long id = (Long) context.getExtendedState().getVariables().get("erroredId");
-        ConfigDTO errored = marketLoadConfigService.findById(id);
+        ConfigDTO errored = loadIndexConfigService.findById(id);
 
-        errored.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(errored).format(format1), marketLoadConfigService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(errored) + 1));
-        marketLoadConfigService.save(errored);
+        errored.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(errored).format(format1), loadIndexConfigService.isPartial(errored), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(errored)+1));
+        loadIndexConfigService.save(errored);
 
         context.getStateMachine().sendEvent(MARKET_CLEANUP_EVENTS.ERROR_TREATED);
 

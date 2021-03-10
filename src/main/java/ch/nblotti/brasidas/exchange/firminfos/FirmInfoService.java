@@ -25,7 +25,6 @@ import java.util.logging.Logger;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FirmInfoService {
 
-  private static final Logger logger = Logger.getLogger("FirmService");
 
   public static final String FIRMS = "firms";
   public static final String FIRM_MAP = "firmsMap";

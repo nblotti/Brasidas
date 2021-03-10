@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @Service
 public class FirmSplitService {
 
-  private static final Logger logger = Logger.getLogger("FirmSplitService");
 
   @Autowired
   protected ModelMapper modelMapper;

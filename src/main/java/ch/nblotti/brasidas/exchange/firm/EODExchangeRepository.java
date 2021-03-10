@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.exchange.firm;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -17,10 +18,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Component
+@Slf4j
 class EODExchangeRepository {
 
 
-  private static final Logger logger = Logger.getLogger("EODExchangeRepository");
 
   public static final String EXCHANGE = "exchange";
   public static final String EXCHANGE_JSON = "exchangelJson";
@@ -82,7 +83,7 @@ class EODExchangeRepository {
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {
-          logger.log(Level.INFO, String.format("Error, retrying\r\n%s", ex.getMessage()));
+          log.error(String.format("Error, retrying\r\n%s", ex.getMessage()));
         }
       }
       throw new IllegalStateException();
@@ -100,7 +101,7 @@ class EODExchangeRepository {
         jsonContext = JsonPath.parse(response.getBody());
         networkErrorHandling = true;
       } catch (Exception ex) {
-        logger.log(Level.INFO, String.format("Error, retrying\r\n%s", ex.getMessage()));
+        log.error(String.format("Error, retrying\r\n%s", ex.getMessage()));
       }
     }
     return jsonContext;

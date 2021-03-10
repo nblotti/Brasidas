@@ -1,9 +1,9 @@
 package ch.nblotti.brasidas.exchange.loader;
 
-public enum SPLIT_EVENTS {
+public enum MARKET_LOADER_EVENTS {
   EVENT_RECEIVED,
   SUCCESS,
-  ERROR_TREATED,
-  ERROR;
+  ERROR,
+  ERROR_TREATED;
 
 }

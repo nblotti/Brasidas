@@ -1,9 +1,11 @@
 package ch.nblotti.brasidas.exchange.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
+import ch.nblotti.brasidas.configuration.JobStatus;
 import ch.nblotti.brasidas.exchange.split.SplitConfigService;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +35,10 @@ import java.util.stream.Collectors;
 
 
 @Service
-public class SplitService {
+@Slf4j
+public class MarketSplitService {
 
 
-  private static final Logger logger = Logger.getLogger("LoaderService");
 
   private static final int WORKER_THREAD_POOL = 1;
   private static final String LOADER = "LOADER";
@@ -71,7 +73,7 @@ public class SplitService {
   private String apiLevelStr = "$..apiRequests";
 
   @Resource
-  private StateMachine<SPLIT_STATES, SPLIT_EVENTS> splitStateMachine;
+  private StateMachine<MARKET_SPLIT_STATES, MARKET_SPLIT_EVENTS> splitStateMachine;
 
   @Autowired
   private RestTemplate externalRestTemplate;
@@ -87,7 +89,7 @@ public class SplitService {
   public void startSplit(Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay) {
 
 
-    Message<LOADER_EVENTS> message;
+    Message<MARKET_LOADER_EVENTS> message;
     List<LocalDate> localDates = new ArrayList<>();
 
     int localStartDay;
@@ -171,7 +173,7 @@ public class SplitService {
     startSplit(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth());
   }
 
-  @Scheduled(cron = "${loader.recurring.cron.expression}")
+  @Scheduled(cron = "${split.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
 
     List<ConfigDTO> configDTOS = splitConfigService.getAll(LOADER, SPLIT_JOBS);
@@ -205,8 +207,8 @@ public class SplitService {
         }
         LocalDate runDate = splitConfigService.parseDate(currentErrored);
 
-        Message<SPLIT_EVENTS> message = MessageBuilder
-          .withPayload(SPLIT_EVENTS.EVENT_RECEIVED)
+        Message<MARKET_SPLIT_EVENTS> message = MessageBuilder
+          .withPayload(MARKET_SPLIT_EVENTS.EVENT_RECEIVED)
           .setHeader("runDate", runDate)
           .setHeader("splitId", currentErrored.getId())
           .build();
@@ -231,8 +233,8 @@ public class SplitService {
     }
 
     LocalDate runDate = splitConfigService.parseDate(current);
-    Message<SPLIT_EVENTS> message = MessageBuilder
-      .withPayload(SPLIT_EVENTS.EVENT_RECEIVED)
+    Message<MARKET_SPLIT_EVENTS> message = MessageBuilder
+      .withPayload(MARKET_SPLIT_EVENTS.EVENT_RECEIVED)
       .setHeader("runDate", runDate)
       .setHeader("splitId", current.getId())
       .build();
@@ -282,7 +284,7 @@ public class SplitService {
       if (type != null && Integer.parseInt(type) > 85000)
         return true;
     } catch (Exception ex) {
-      logger.severe(ex.getMessage());
+      log.error(ex.getMessage());
     }
     return false;
   }

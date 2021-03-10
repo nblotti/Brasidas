@@ -1,6 +1,6 @@
 package ch.nblotti.brasidas.exchange.loader;
 
-public enum LOADER_STATES {
+public enum MARKET_LOADER_STATES {
   READY,
   WAITING_EVENT,
   GET_DATES,

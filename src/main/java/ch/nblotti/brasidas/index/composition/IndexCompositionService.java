@@ -20,7 +20,6 @@ import java.util.logging.Logger;
 @Service
 public class IndexCompositionService {
 
-  private static final Logger logger = Logger.getLogger("IndexCompositionService");
 
   public static final String INDEXES = "indexes";
   public static final String INDEX_MAP = "indexesMap";

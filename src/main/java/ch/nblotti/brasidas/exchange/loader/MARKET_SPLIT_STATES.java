@@ -1,12 +1,12 @@
 package ch.nblotti.brasidas.exchange.loader;
 
-public enum CLEANUP_STATES {
+public enum MARKET_SPLIT_STATES {
   READY,
   WAITING_EVENT,
-  GET_DATES,
-  DELETE_STATE,
+  LOAD_SPLITS,
+  UPDATE_QUOTES,
   ERROR_STATE,
-  DONE,
-  CANCELED;
+  CANCELED,
+  DONE;
 
 }

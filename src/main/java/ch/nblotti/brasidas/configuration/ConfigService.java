@@ -17,7 +17,6 @@ import java.util.logging.Logger;
 public abstract class ConfigService {
 
 
-  private static final Logger logger = Logger.getLogger("ConfigService");
   public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\",\"retry\":\"%s\"}";
 
   private String runningSatusStr = "$..status";

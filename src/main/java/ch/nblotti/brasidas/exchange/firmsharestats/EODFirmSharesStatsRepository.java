@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.exchange.firmsharestats;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -15,10 +16,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Component
+@Slf4j
 class EODFirmSharesStatsRepository {
 
-
-  private static final Logger logger = Logger.getLogger("FirmEODRepository");
 
   private static final int MAX_RETRY = 100;
 
@@ -54,7 +54,7 @@ class EODFirmSharesStatsRepository {
       return Optional.of(EODSharesStatsDTO);
 
     } catch (Exception ex) {
-      logger.log(Level.INFO, String.format("Error, mapping Share stats for symbol %s \r\n%s", symbol, ex.getMessage()));
+      log.warn(String.format("Error, mapping Share stats for symbol %s \r\n%s", symbol, ex.getMessage()));
       return Optional.empty();
     }
   }
@@ -63,14 +63,14 @@ class EODFirmSharesStatsRepository {
   protected ResponseEntity<String> getStringResponseEntity(String finalUrl) {
     if (cacheOne.get(finalUrl.hashCode()) == null) {
       int networkErrorHandling = 0;
-      while (networkErrorHandling< MAX_RETRY) {
+      while (networkErrorHandling < MAX_RETRY) {
         try {
           ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {
           networkErrorHandling++;
-          logger.log(Level.INFO, String.format("Error, retrying\r\n%s", ex.getMessage()));
+          log.warn(String.format("Error, retrying\r\n%s", ex.getMessage()));
         }
       }
       throw new IllegalStateException();
@@ -78,7 +78,6 @@ class EODFirmSharesStatsRepository {
 
     return (ResponseEntity<String>) cacheOne.get(finalUrl.hashCode()).get();
   }
-
 
 
 }

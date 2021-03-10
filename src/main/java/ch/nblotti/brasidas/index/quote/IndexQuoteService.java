@@ -19,7 +19,6 @@ import java.util.logging.Logger;
 @Service
 public class IndexQuoteService {
 
-  private static final Logger logger = Logger.getLogger("IndexQuoteService");
 
   public static final String INDEXES = "indexes";
   public static final String INDEX_MAP = "indexesMap";

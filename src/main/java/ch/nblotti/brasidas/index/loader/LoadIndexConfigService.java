@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.split;
+package ch.nblotti.brasidas.index.loader;
 
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
@@ -20,15 +20,15 @@ import java.util.logging.Logger;
 
 @Service
 @Transactional
-public class SplitConfigService extends ConfigService {
+public class LoadIndexConfigService extends ConfigService {
 
 
-  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\",\"retry\":\"%s\"}";
+  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\",\"retry\":\"%s\"}";
 
   private String runningSatusStr = "$..status";
   private String runningDateStr = "$..date";
   private String updatedDateStr = "$..updated";
-
+  private String runningPartialStr = "$..partial";
   private String shouldRetryStr = "$..retry";
 
 
@@ -72,6 +72,16 @@ public class SplitConfigService extends ConfigService {
       return LocalDateTime.parse(type, formatMessage);
     return null;
   }
+
+  public boolean isPartial(ConfigDTO configDTO) {
+    DocumentContext content = JsonPath.parse(configDTO.getValue());
+    JSONArray json = content.read(runningPartialStr);
+    String type = json.get(0).toString();
+    if (type != null && type.compareToIgnoreCase("true") == 0)
+      return true;
+    return false;
+  }
+
 
   public int retryCount(ConfigDTO configDTO) {
 

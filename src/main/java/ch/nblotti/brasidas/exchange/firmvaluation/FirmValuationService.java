@@ -24,7 +24,6 @@ import java.util.logging.Logger;
 @Service
 public class FirmValuationService {
 
-  private static final Logger logger = Logger.getLogger("FirmValuationService");
 
 
   @Value("${referential.firmvaluation.baseurl}")

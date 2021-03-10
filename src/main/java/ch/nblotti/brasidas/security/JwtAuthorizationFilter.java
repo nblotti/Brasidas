@@ -21,7 +21,6 @@ import java.util.List;
 
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
-  private static final Logger log = LoggerFactory.getLogger(JwtAuthorizationFilter.class);
 
   public String idpValidationUrl;
 

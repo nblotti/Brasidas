@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.exchange.split;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +17,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Component
+@Slf4j
 public class EODFirmSplitRepository {
-
-
-  private static final Logger logger = Logger.getLogger("EODFirmFundamentalRepository");
 
 
   @Value("${firm.split.bulk.url}")
@@ -57,7 +56,7 @@ public class EODFirmSplitRepository {
         ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
         return entity;
       } catch (Exception ex) {
-        logger.log(Level.INFO, String.format("Error, retrying\r\n%s", ex.getMessage()));
+        log.error(String.format("Error, retrying\r\n%s", ex.getMessage()));
       }
     }
     throw new IllegalStateException();
@@ -72,7 +71,7 @@ public class EODFirmSplitRepository {
         jsonContext = JsonPath.parse(response.getBody());
         networkErrorHandling = true;
       } catch (Exception ex) {
-        logger.log(Level.INFO, String.format("Error, retrying\r\n%s", ex.getMessage()));
+        log.error(String.format("Error, retrying\r\n%s", ex.getMessage()));
       }
     }
     return jsonContext;

@@ -1,6 +1,7 @@
 package ch.nblotti.brasidas.exchange.firm;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
@@ -21,9 +22,9 @@ import java.util.stream.Collectors;
 
 
 @Service
+@Slf4j
 public class FirmService {
 
-  private static final Logger logger = Logger.getLogger("FirmService");
 
   public static final String FIRMS = "firms";
   public static final String FIRM_MAP = "firmsMap";

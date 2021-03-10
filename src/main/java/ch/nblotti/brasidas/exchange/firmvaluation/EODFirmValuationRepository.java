@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.exchange.firmvaluation;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -15,10 +16,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Component
+@Slf4j
 class EODFirmValuationRepository {
 
-
-  private static final Logger logger = Logger.getLogger("FirmEODRepository");
 
   private static final int MAX_RETRY = 100;
 
@@ -53,7 +53,7 @@ class EODFirmValuationRepository {
 
       return Optional.of(EODValuationDTO);
     } catch (Exception ex) {
-      logger.log(Level.INFO, String.format("Error, mapping valuation for symbol %s \r\n%s", symbol, ex.getMessage()));
+      log.warn(String.format("Error, mapping valuation for symbol %s \r\n%s", symbol, ex.getMessage()));
       return Optional.empty();
     }
 
@@ -72,7 +72,7 @@ class EODFirmValuationRepository {
           return entity;
         } catch (Exception ex) {
           networkErrorHandling++;
-          logger.log(Level.INFO, String.format("Error, retrying\r\n%s", ex.getMessage()));
+          log.warn(String.format("Error, retrying\r\n%s", ex.getMessage()));
         }
       }
       throw new IllegalStateException();

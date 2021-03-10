@@ -1,8 +1,8 @@
 package ch.nblotti.brasidas;
 
 
-import ch.nblotti.brasidas.exchange.loader.LOADER_EVENTS;
-import ch.nblotti.brasidas.exchange.loader.LOADER_STATES;
+import ch.nblotti.brasidas.exchange.loader.MARKET_LOADER_EVENTS;
+import ch.nblotti.brasidas.exchange.loader.MARKET_LOADER_STATES;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.statemachine.StateMachine;
@@ -21,7 +21,7 @@ public class PingController {
 
 
   @Resource
-  private StateMachine<LOADER_STATES, LOADER_EVENTS> sp500LoaderStateMachine;
+  private StateMachine<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> sp500LoaderStateMachine;
 
   @Autowired
   protected DateTimeFormatter format1;
@@ -31,7 +31,7 @@ public class PingController {
   public ResponseEntity<String> ping(@PathParam(value = "key") String key) {
 
 
-    if (LOADER_STATES.READY == sp500LoaderStateMachine.getState().getId())
+    if (MARKET_LOADER_STATES.READY == sp500LoaderStateMachine.getState().getId())
       return ResponseEntity.ok(String.format("%s - %s", key == null ? "" : key, LocalDateTime.now().format(format1)));
     else
       return ResponseEntity.notFound().build();

@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 @Service
 public class FirmSharesStatsService {
 
-  private static final Logger logger = Logger.getLogger("FirmService");
 
   public static final String FIRMS = "firms";
   public static final String FIRM_MAP = "firmsMap";

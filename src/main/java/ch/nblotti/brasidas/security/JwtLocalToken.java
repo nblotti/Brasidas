@@ -6,6 +6,7 @@ import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.DefaultClaims;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +21,9 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 @Component
+@Slf4j
 public class JwtLocalToken {
 
-
-  private static final Logger logger = Logger.getLogger("JwtLocalToken");
 
   private static final String ALGORITHM = "RSA";
   public static final int RETRY_SLEEP_TIME_IN_MS = 30000;
@@ -55,7 +55,7 @@ public class JwtLocalToken {
     String responseStr = new String();
 
     while (responseStr.isEmpty()) {
-      logger.severe(String.format("Starting technical login"));
+      log.info(String.format("Starting technical login"));
       try {
         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
         long nowMillis = System.currentTimeMillis();
@@ -89,7 +89,7 @@ public class JwtLocalToken {
         responseStr = String.format("Bearer %s", response.getBody().get("response").toString());
       } catch (Exception ex) {
         try {
-          logger.severe(String.format("Error creating JWT (technical login), retrying in 30s"));
+          log.error(String.format("Error creating JWT (technical login), retrying in 30s"));
           Thread.sleep(RETRY_SLEEP_TIME_IN_MS);
         } catch (InterruptedException e) {
           e.printStackTrace();
@@ -111,7 +111,7 @@ public class JwtLocalToken {
   }
 
 
-  public String getJWT()  {
+  public String getJWT() {
 
     if (this.jwtToken == null || this.jwtToken.isEmpty())
       this.jwtToken = createJWT();

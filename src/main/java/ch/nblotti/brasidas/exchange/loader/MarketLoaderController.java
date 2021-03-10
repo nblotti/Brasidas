@@ -10,11 +10,10 @@ import java.util.logging.Logger;
 
 
 @RestController
-@RequestMapping("/loader")
-public class LoaderController {
+@RequestMapping("/market/loader")
+public class MarketLoaderController {
 
 
-  private static final Logger logger = Logger.getLogger("LoaderController");
 
   private static final int WORKER_THREAD_POOL = 1;
   public static final String LOADER = "LOADER";
@@ -22,10 +21,10 @@ public class LoaderController {
   public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\"}";
 
   @Autowired
-  private LoaderService loaderService;
+  private MarketLoaderService marketLoaderService;
 
   @Autowired
-  private SplitService splitService;
+  private MarketSplitService marketSplitService;
 
 
 
@@ -54,7 +53,7 @@ public class LoaderController {
       throw new IllegalArgumentException("End month or start month cannot be bigger than 12. start month cannot be bigger than end month");
     }
 
-    splitService.startSplit(startYear, startMonth, startDay, endYear, endMonth, endDay);
+    marketSplitService.startSplit(startYear, startMonth, startDay, endYear, endMonth, endDay);
   }
 
 
@@ -85,7 +84,7 @@ public class LoaderController {
       throw new IllegalArgumentException("End month or start month cannot be bigger than 12. start month cannot be bigger than end month");
     }
 
-    loaderService.startLoad(startYear, startMonth, startDay, endYear, endMonth, endDay, Boolean.TRUE);
+    marketLoaderService.startLoad(startYear, startMonth, startDay, endYear, endMonth, endDay, Boolean.TRUE);
   }
 
   @PostMapping(value = "/loadall")
@@ -113,7 +112,7 @@ public class LoaderController {
       throw new IllegalArgumentException("End month or start month cannot be bigger than 12. start month cannot be bigger than end month");
     }
 
-    loaderService.startLoad(startYear, startMonth, startDay, endYear, endMonth, endDay, Boolean.FALSE);
+    marketLoaderService.startLoad(startYear, startMonth, startDay, endYear, endMonth, endDay, Boolean.FALSE);
   }
 
 
