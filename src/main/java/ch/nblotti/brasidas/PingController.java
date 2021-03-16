@@ -30,12 +30,7 @@ public class PingController {
   @GetMapping
   public ResponseEntity<String> ping(@PathParam(value = "key") String key) {
 
-
-    if (MARKET_LOADER_STATES.READY == sp500LoaderStateMachine.getState().getId())
-      return ResponseEntity.ok(String.format("%s - %s", key == null ? "" : key, LocalDateTime.now().format(format1)));
-    else
-      return ResponseEntity.notFound().build();
-
+    return ResponseEntity.ok(String.format("%s - %s", key == null ? "" : key, LocalDateTime.now().format(format1)));
 
   }
 
