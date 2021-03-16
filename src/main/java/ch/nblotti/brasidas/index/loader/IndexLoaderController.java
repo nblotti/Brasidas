@@ -18,18 +18,11 @@ public class IndexLoaderController {
 
   private static final int WORKER_THREAD_POOL = 1;
   public static final String LOADER = "LOADER";
-  public static final String RUNNING_JOBS = "RUNNING_JOBS";
-  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"partial\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\"}";
+  public static final String RUNNING_JOBS = "INDEX_JOBS";
+  public static final String CONFIG_DTO_VALUE_STR = "{\"date\":\"%s\",\"status\":\"%s\",\"updated\":\"%s\"}";
 
   @Autowired
   private IndexLoaderService indexLoaderService;
-
-  @Autowired
-  private MarketSplitService marketSplitService;
-
-
-
-
 
 
   @PostMapping(value = "/load")

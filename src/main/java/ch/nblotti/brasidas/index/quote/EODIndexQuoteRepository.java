@@ -44,7 +44,6 @@ public class EODIndexQuoteRepository {
   @Autowired
   Cache cacheOne;
 
-
   public List<EODIndexQuoteDTO> getIndexDataByDate(LocalDate fromDate, LocalDate toDate, String index) {
 
     String finalUrl = String.format(indexUrl, index, INDEX_SUFFIX, fromDate.format(format1), toDate.format(format1), apiKey);

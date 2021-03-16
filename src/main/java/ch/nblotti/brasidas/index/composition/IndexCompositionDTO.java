@@ -1,82 +1,29 @@
 package ch.nblotti.brasidas.index.composition;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDate;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class IndexCompositionDTO {
 
   private Integer id;
 
-  private LocalDate date;
-
   private String code;
 
-  private String exchange;
+  private LocalDate startDate;
 
-  private String name;
+  private LocalDate endDate;
 
-  private String sector;
+  private boolean isActiveNow;
 
-  private String industry;
-
-  public IndexCompositionDTO() {
-  }
+  private boolean isDelisted;
 
 
-  public Integer getId() {
-    return id;
-  }
-
-  public void setId(Integer id) {
-    this.id = id;
-  }
-
-  public LocalDate getDate() {
-    return date;
-  }
-
-  public void setDate(LocalDate date) {
-    this.date = date;
-  }
-
-  public String getCode() {
-    return code;
-  }
-
-  public void setCode(String code) {
-    this.code = code;
-  }
-
-  public String getExchange() {
-    return exchange;
-  }
-
-  public void setExchange(String exchange) {
-    this.exchange = exchange;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getSector() {
-    return sector;
-  }
-
-  public void setSector(String sector) {
-    this.sector = sector;
-  }
-
-  public String getIndustry() {
-    return industry;
-  }
-
-  public void setIndustry(String industry) {
-    this.industry = industry;
-  }
 }
 
 

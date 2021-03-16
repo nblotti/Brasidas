@@ -4,11 +4,11 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,10 +22,11 @@ public class EODIndexCompositionRepository {
   private DateTimeFormatter format1;
 
   @Value("${index.component.api.url}")
-  public String indexComponentUrl;
+  public String eodIndexComponentUrl;
 
 
-  public String conponentStr = "$.Components[*]";
+
+  public String conponentStr = "$.HistoricalTickerComponents[*]";
 
 
   @Value("${spring.application.eod.api.key}")
@@ -36,20 +37,19 @@ public class EODIndexCompositionRepository {
   private RestTemplate externalRestTemplate;
 
 
-  public Collection<EODIndexCompositionDTO> getIndexCompositionAtDate(LocalDate localDate, String index) {
+  public Collection<EODIndexCompositionDTO> getIndexComposition(String index) {
 
 
-    String finalUrl = String.format(indexComponentUrl, index, apiKey, localDate.format(format1), localDate.format(format1));
+    String finalUrl = String.format(eodIndexComponentUrl, index, apiKey);
 
     final ResponseEntity<String> response = externalRestTemplate.getForEntity(finalUrl, String.class);
 
     DocumentContext jsonContext = JsonPath.parse(response.getBody());
 
-    List<EODIndexCompositionDTO> firms = Arrays.asList(jsonContext.read(conponentStr, EODIndexCompositionDTO[].class));
-    firms.stream().forEach(x -> x.setExchange(index));
+    return Arrays.asList(jsonContext.read(conponentStr, EODIndexCompositionDTO[].class));
 
-    return firms;
   }
+
 
 
 }

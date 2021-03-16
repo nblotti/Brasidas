@@ -5,13 +5,15 @@ class EODIndexCompositionDTO {
 
   String Code;
 
-  String Exchange;
-
   String Name;
 
-  String Sector;
+  String StartDate;
 
-  String Industry;
+  String EndDate;
+
+  String IsActiveNow;
+
+  String IsDelisted;
 
   public EODIndexCompositionDTO() {
   }
@@ -24,14 +26,6 @@ class EODIndexCompositionDTO {
     Code = code;
   }
 
-  public String getExchange() {
-    return Exchange;
-  }
-
-  public void setExchange(String exchange) {
-    Exchange = exchange;
-  }
-
   public String getName() {
     return Name;
   }
@@ -40,20 +34,36 @@ class EODIndexCompositionDTO {
     Name = name;
   }
 
-  public String getSector() {
-    return Sector;
+  public String getStartDate() {
+    return StartDate;
   }
 
-  public void setSector(String sector) {
-    Sector = sector;
+  public void setStartDate(String startDate) {
+    StartDate = startDate;
   }
 
-  public String getIndustry() {
-    return Industry;
+  public String getEndDate() {
+    return EndDate;
   }
 
-  public void setIndustry(String industry) {
-    Industry = industry;
+  public void setEndDate(String endDate) {
+    EndDate = endDate;
+  }
+
+  public String getIsActiveNow() {
+    return IsActiveNow;
+  }
+
+  public void setIsActiveNow(String isActiveNow) {
+    IsActiveNow = isActiveNow;
+  }
+
+  public String getIsDelisted() {
+    return IsDelisted;
+  }
+
+  public void setIsDelisted(String isDelisted) {
+    IsDelisted = isDelisted;
   }
 }
 

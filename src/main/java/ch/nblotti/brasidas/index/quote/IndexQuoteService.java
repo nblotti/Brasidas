@@ -1,11 +1,15 @@
 package ch.nblotti.brasidas.index.quote;
 
 
+import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
@@ -13,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Logger;
 
 
 @Service
@@ -30,6 +33,12 @@ public class IndexQuoteService {
 
   @Autowired
   protected ModelMapper modelMapper;
+
+  @Autowired
+  private RestTemplate restTemplate;
+
+  @Value("${referential.index.quote.baseurl}")
+  private String indexQuoteStr;
 
 
   @Autowired
@@ -52,8 +61,35 @@ public class IndexQuoteService {
   }
 
 
+  public IndexQuoteDTO getIndexDataByDate(LocalDate fromDate, String index) {
+
+    List<IndexQuoteDTO> indexQuoteDTOs = new ArrayList<>();
+
+    Collection<EODIndexQuoteDTO> eODIndexQuoteDTOs = eodIndexQuoteRepository.getIndexDataByDate(fromDate, fromDate, index);
+
+    for (EODIndexQuoteDTO current : eODIndexQuoteDTOs) {
+
+      IndexQuoteDTO fHpost = modelMapper.map(current, IndexQuoteDTO.class);
+      indexQuoteDTOs.add(fHpost);
+
+    }
+    if (indexQuoteDTOs.isEmpty())
+      return null;
+    return indexQuoteDTOs.get(0);
+  }
+
+
+  public IndexQuoteDTO saveEODIndexQuotes(IndexQuoteDTO indexQuoteDTO) {
+
+    HttpEntity<IndexQuoteDTO> request = new HttpEntity<IndexQuoteDTO>(indexQuoteDTO);
+
+    return restTemplate.postForObject(indexQuoteStr, request, IndexQuoteDTO.class);
+
+  }
+
+
   @PostConstruct
-   void initIndexQuoteDTOMapper() {
+  void initIndexQuoteDTOMapper() {
     Converter<EODIndexQuoteDTO, IndexQuoteDTO> toUppercase = new AbstractConverter<EODIndexQuoteDTO, IndexQuoteDTO>() {
 
       @Override

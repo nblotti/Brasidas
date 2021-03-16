@@ -2,7 +2,6 @@ package ch.nblotti.brasidas.index.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.exchange.loader.MARKET_CLEANUP_EVENTS;
-import ch.nblotti.brasidas.exchange.loader.MARKET_CLEANUP_STATES;
 import ch.nblotti.brasidas.configuration.JobStatus;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -16,11 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.StateMachine;
-import org.springframework.statemachine.listener.StateMachineListener;
-import org.springframework.statemachine.state.State;
-import org.springframework.statemachine.transition.Transition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -45,7 +40,7 @@ public class IndexLoaderService {
 
   private static final int WORKER_THREAD_POOL = 1;
   private static final String LOADER = "LOADER";
-  private static final String RUNNING_JOBS = "RUNNING_JOBS";
+  private static final String INDEX_JOBS = "INDEX_JOBS";
 
 
   @Autowired
@@ -158,8 +153,8 @@ public class IndexLoaderService {
 
           ConfigDTO configDTO = new ConfigDTO();
           configDTO.setCode(LOADER);
-          configDTO.setType(RUNNING_JOBS);
-        //  configDTO.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), 0));
+          configDTO.setType(INDEX_JOBS);
+          configDTO.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), 0));
           return configDTO;
 
         }).collect(Collectors.toList());
@@ -170,34 +165,32 @@ public class IndexLoaderService {
   }
 
 
-  //@Scheduled(cron = "${index.loader.monthly.cron.expression}")
+  @Scheduled(cron = "${index.loader.daily.cron.expression}")
   @Transactional
   public void scheduleDailyTask() {
 
     LocalDate runDate = LocalDate.now().minusDays(1);
-    //startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
+    startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth());
   }
 
-  //@Scheduled(cron = "${index.loader.recurring.cron.expression}")
+  @Scheduled(cron = "${index.loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
 
 
     if (isApiCallToElevated())
       return;
 
-    if (true)
-      return;
 
-    List<ConfigDTO> configDTOS = loadIndexConfigService.getAll(LOADER, RUNNING_JOBS);
+    List<ConfigDTO> configDTOS = loadIndexConfigService.getAll(LOADER, INDEX_JOBS);
 
     List<ConfigDTO> running = getJobsInGivenStatus(configDTOS, JobStatus.RUNNING);
     if (!running.isEmpty()) {
       running.stream().forEach(currentRunning -> {
         if (isHanging(currentRunning)) {
           if (loadIndexConfigService.shouldRetry(currentRunning))
-            currentRunning.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentRunning).format(format1), loadIndexConfigService.isPartial(currentRunning), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentRunning)));
+            currentRunning.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentRunning).format(format1), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentRunning)));
           else
-            currentRunning.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentRunning).format(format1), loadIndexConfigService.isPartial(currentRunning), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentRunning)));
+            currentRunning.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentRunning).format(format1), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentRunning)));
 
           loadIndexConfigService.update(currentRunning);
         }
@@ -213,22 +206,12 @@ public class IndexLoaderService {
       errored.stream().forEach(currentErrored -> {
 
         if (!loadIndexConfigService.shouldRetry(currentErrored)) {
-          currentErrored.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentErrored).format(format1), loadIndexConfigService.isPartial(currentErrored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentErrored)));
+          currentErrored.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentErrored).format(format1), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentErrored)));
           loadIndexConfigService.update(currentErrored);
-          return;
+        } else {
+          currentErrored.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(currentErrored).format(format1), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(currentErrored)));
+          loadIndexConfigService.update(currentErrored);
         }
-        LocalDate runDate = loadIndexConfigService.parseDate(currentErrored);
-
-        Message<MARKET_CLEANUP_EVENTS> message = MessageBuilder
-          .withPayload(MARKET_CLEANUP_EVENTS.EVENT_RECEIVED)
-          .setHeader("runDate", runDate)
-          .setHeader("erroredId", currentErrored.getId())
-          .build();
-
-
-     //   marketCleanerStateMachine.sendEvent(message);
-        return;
-
       });
       return;
     }
@@ -239,7 +222,7 @@ public class IndexLoaderService {
     ConfigDTO current = toRun.iterator().next();
 
     if (!loadIndexConfigService.shouldRetry(current)) {
-      current.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(current).format(format1), loadIndexConfigService.isPartial(current), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(current)));
+      current.setValue(String.format(LoadIndexConfigService.CONFIG_DTO_VALUE_STR, loadIndexConfigService.parseDate(current).format(format1), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), loadIndexConfigService.retryCount(current)));
       loadIndexConfigService.update(current);
       return;
     }
@@ -249,7 +232,7 @@ public class IndexLoaderService {
     Message<INDEX_LOADER_EVENTS> message = MessageBuilder
       .withPayload(INDEX_LOADER_EVENTS.EVENT_RECEIVED)
       .setHeader("runDate", runDate)
-      .setHeader("loadId", current.getId())
+      .setHeader("indexJobId", current.getId())
       .build();
 
     indexLoaderStateMachine.sendEvent(message);
@@ -298,6 +281,7 @@ public class IndexLoaderService {
         return true;
     } catch (Exception ex) {
       log.error(ex.getMessage());
+      return true;
     }
     return false;
   }

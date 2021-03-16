@@ -4,17 +4,19 @@ package ch.nblotti.brasidas.index.composition;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Logger;
 
 
 @Service
@@ -28,7 +30,12 @@ public class IndexCompositionService {
   @Autowired
   private EODIndexCompositionRepository eODIndexCompositionRepository;
 
+  @Value("${referential.index.composition.baseurl}")
+  public String indexComponentUrl;
 
+
+  @Autowired
+  protected RestTemplate restTemplate;
 
   @Autowired
   protected ModelMapper modelMapper;
@@ -38,27 +45,20 @@ public class IndexCompositionService {
   protected DateTimeFormatter format1;
 
 
-  public Iterable<IndexCompositionDTO> loadAndSaveIndexCompositionAtDate(LocalDate runDate, String index) {
-    Collection<IndexCompositionDTO> indexCompositionDTOS = getIndexDataByDate(runDate, index);
-    return saveIndexComposition(indexCompositionDTOS);
-  }
-
-  public List<IndexCompositionDTO> getIndexDataByDate(LocalDate runDate, String index) {
+  public List<IndexCompositionDTO> getIndexComposition(String index) {
 
     List<IndexCompositionDTO> indexCompositionDTOs = new ArrayList<>();
 
-    Collection<EODIndexCompositionDTO> EODIndexCompositionDTOS = eODIndexCompositionRepository.getIndexCompositionAtDate(runDate, index);
+    Collection<EODIndexCompositionDTO> EODIndexCompositionDTOS = eODIndexCompositionRepository.getIndexComposition(index);
 
     for (EODIndexCompositionDTO current : EODIndexCompositionDTOS) {
 
       IndexCompositionDTO fHpost = modelMapper.map(current, IndexCompositionDTO.class);
-      fHpost.setDate(runDate);
       indexCompositionDTOs.add(fHpost);
 
     }
     return indexCompositionDTOs;
   }
-
 
 
   @PostConstruct
@@ -73,13 +73,13 @@ public class IndexCompositionService {
 
         indexCompositionDTO.setCode(eODIndexCompositionDTO.getCode());
 
-        indexCompositionDTO.setExchange(eODIndexCompositionDTO.getExchange());
+        indexCompositionDTO.setActiveNow(Boolean.parseBoolean(eODIndexCompositionDTO.getIsActiveNow()));
 
-        indexCompositionDTO.setName(eODIndexCompositionDTO.getName());
+        indexCompositionDTO.setDelisted(Boolean.parseBoolean(eODIndexCompositionDTO.getIsDelisted()));
 
-        indexCompositionDTO.setSector(eODIndexCompositionDTO.getSector());
+        indexCompositionDTO.setStartDate(LocalDate.parse(eODIndexCompositionDTO.getStartDate(), format1));
 
-        indexCompositionDTO.setIndustry(eODIndexCompositionDTO.getIndustry());
+        indexCompositionDTO.setEndDate(LocalDate.parse(eODIndexCompositionDTO.getEndDate(), format1));
 
         return indexCompositionDTO;
       }
@@ -89,10 +89,21 @@ public class IndexCompositionService {
 
   }
 
-  public Iterable<IndexCompositionDTO> saveIndexComposition(Collection<IndexCompositionDTO> indexCompositionDTOS) {
+  public List<IndexCompositionDTO> saveAll(List<IndexCompositionDTO> indexCompositionDTOS) {
+
+    HttpEntity<Collection<IndexCompositionDTO>> request = new HttpEntity<Collection<IndexCompositionDTO>>(indexCompositionDTOS);
+
+    IndexCompositionDTO[] responseEntity = restTemplate.postForObject(indexComponentUrl, request, IndexCompositionDTO[].class);
+
+    return Arrays.asList(responseEntity);
+
+  }
+
+  public void deleteAll() {
+
+    restTemplate.delete(indexComponentUrl);
 
 
-    return indexCompositionDTOS;
   }
 
 

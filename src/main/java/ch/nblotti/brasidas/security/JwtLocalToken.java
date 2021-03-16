@@ -26,7 +26,7 @@ public class JwtLocalToken {
 
 
   private static final String ALGORITHM = "RSA";
-  public static final int RETRY_SLEEP_TIME_IN_MS = 30000;
+  public static final int RETRY_SLEEP_TIME_IN_MS = 5000;
 
 
   @Value("${zeus.sharedkey.url}")
@@ -89,7 +89,7 @@ public class JwtLocalToken {
         responseStr = String.format("Bearer %s", response.getBody().get("response").toString());
       } catch (Exception ex) {
         try {
-          log.error(String.format("Error creating JWT (technical login), retrying in 30s"));
+          log.error(String.format("Error creating JWT (technical login), retrying in 5s"));
           Thread.sleep(RETRY_SLEEP_TIME_IN_MS);
         } catch (InterruptedException e) {
           e.printStackTrace();

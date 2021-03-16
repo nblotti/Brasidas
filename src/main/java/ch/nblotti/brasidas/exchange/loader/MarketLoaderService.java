@@ -360,6 +360,7 @@ public class MarketLoaderService {
         return true;
     } catch (Exception ex) {
       log.error(ex.getMessage());
+      return true;
     }
     return false;
   }
