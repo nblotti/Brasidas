@@ -161,75 +161,36 @@ public class MarketLoaderService {
     Message<MARKET_LOADER_EVENTS> message;
     List<LocalDate> localDates = new ArrayList<>();
 
-    int localStartDay;
-    if (startDay == null || startDay <= 0)
-      localStartDay = 1;
-    else
-      localStartDay = startDay;
 
-    int localEndDay = LocalDate.of(endYear, endMonth, 1).with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
-    if (endDay <= localEndDay)
-      localEndDay = endDay;
+    LocalDate startDate = LocalDate.of(startYear, startMonth, startDay);
+    LocalDate endDate = LocalDate.of(endYear, endMonth, endDay);
 
+    for (LocalDate currentDate = startDate; currentDate.isBefore(endDate); currentDate = currentDate.plusDays(1)) {
+      if (currentDate.isAfter(LocalDate.now().minusDays(1)))
+        continue;
 
-    for (int year = startYear; year <= endYear; year++) {
-
-      int loopstartMonth = 1;
-      int loopLastMonth = 12;
-
-      if (year == endYear)
-        loopLastMonth = endMonth;
-
-      if (year == startYear)
-        loopstartMonth = startMonth;
-
-      for (int month = loopstartMonth; month <= loopLastMonth; month++) {
-        LocalDate localDate = LocalDate.of(year, month, 1);
-        localDate = localDate.withDayOfMonth(localDate.lengthOfMonth());
-
-        int loopLastDay = 1;
-        int loopStartDay = 1;
-
-        loopLastDay = localDate.with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
-
-        if (year >= endYear && month >= endMonth) {
-          loopLastDay = localEndDay;
-        }
-
-        if (year == startYear && month == startMonth) {
-          loopStartDay = localStartDay;
-        }
-        for (int day = loopStartDay; day <= loopLastDay; day++) {
-          LocalDate runDate = localDate.withDayOfMonth(day);
-
-          if (runDate.isAfter(LocalDate.now().minusDays(1)))
-            return;
-
-          localDates.add(runDate);
+      if (currentDate.getDayOfWeek() == DayOfWeek.SATURDAY
+        || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY
+        || wasDayBeforeRunDateDayDayOff(currentDate))
+        continue;
 
 
-        }
-
-        List<ConfigDTO> configDTOS = localDates.stream().filter(current -> {
-            if (current.getDayOfWeek() != DayOfWeek.SATURDAY
-              && current.getDayOfWeek() != DayOfWeek.SUNDAY
-              && !wasDayBeforeRunDateDayDayOff(current))
-              return true;
-            return false;
-          }
-        ).map(filtred -> {
-
-          ConfigDTO configDTO = new ConfigDTO();
-          configDTO.setCode(LOADER);
-          configDTO.setType(RUNNING_JOBS);
-          configDTO.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage),0));
-          return configDTO;
-
-        }).collect(Collectors.toList());
-
-        marketLoadConfigService.saveAll(configDTOS);
-      }
+      localDates.add(currentDate);
     }
+
+    List<ConfigDTO> configDTOS = localDates.stream().map(filtred -> {
+
+      ConfigDTO configDTO = new ConfigDTO();
+      configDTO.setCode(LOADER);
+      configDTO.setType(RUNNING_JOBS);
+      configDTO.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), runPartial, JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), 0));
+      return configDTO;
+
+    }).collect(Collectors.toList());
+
+    marketLoadConfigService.saveAll(configDTOS);
+
+
   }
 
 
@@ -245,7 +206,7 @@ public class MarketLoaderService {
   public void scheduleRecurringDelayTask() {
 
 
-    if(   isApiCallToElevated())
+    if (isApiCallToElevated())
       return;
 
 
@@ -255,7 +216,7 @@ public class MarketLoaderService {
     if (!running.isEmpty()) {
       running.stream().forEach(currentRunning -> {
         if (isHanging(currentRunning)) {
-          if(marketLoadConfigService.shouldRetry(currentRunning))
+          if (marketLoadConfigService.shouldRetry(currentRunning))
             currentRunning.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(currentRunning).format(format1), marketLoadConfigService.isPartial(currentRunning), JobStatus.ERROR, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(currentRunning)));
           else
             currentRunning.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(currentRunning).format(format1), marketLoadConfigService.isPartial(currentRunning), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(currentRunning)));
@@ -273,8 +234,8 @@ public class MarketLoaderService {
 
       errored.stream().forEach(currentErrored -> {
 
-        if(!marketLoadConfigService.shouldRetry(currentErrored)) {
-          currentErrored.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(currentErrored).format(format1), marketLoadConfigService.isPartial(currentErrored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(currentErrored) ));
+        if (!marketLoadConfigService.shouldRetry(currentErrored)) {
+          currentErrored.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(currentErrored).format(format1), marketLoadConfigService.isPartial(currentErrored), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(currentErrored)));
           marketLoadConfigService.update(currentErrored);
           return;
         }
@@ -299,8 +260,8 @@ public class MarketLoaderService {
 
     ConfigDTO current = toRun.iterator().next();
 
-    if(!marketLoadConfigService.shouldRetry(current)) {
-      current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), marketLoadConfigService.isPartial(current), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current) ));
+    if (!marketLoadConfigService.shouldRetry(current)) {
+      current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), marketLoadConfigService.isPartial(current), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current)));
       marketLoadConfigService.update(current);
       return;
     }
@@ -325,7 +286,6 @@ public class MarketLoaderService {
 
     return minutes >= maxRunningTime;
   }
-
 
 
   private void cleanup(ConfigDTO configDTO) {

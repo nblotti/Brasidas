@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 public class MarketSplitService {
 
 
-
   private static final int WORKER_THREAD_POOL = 1;
   private static final String LOADER = "LOADER";
   private static final String SPLIT_JOBS = "SPLIT_JOBS";
@@ -92,76 +91,35 @@ public class MarketSplitService {
     Message<MARKET_LOADER_EVENTS> message;
     List<LocalDate> localDates = new ArrayList<>();
 
-    int localStartDay;
-    if (startDay == null || startDay <= 0)
-      localStartDay = 1;
-    else
-      localStartDay = startDay;
 
-    int localEndDay = LocalDate.of(endYear, endMonth, 1).with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
-    if (endDay <= localEndDay)
-      localEndDay = endDay;
+    LocalDate startDate = LocalDate.of(startYear, startMonth, startDay);
+    LocalDate endDate = LocalDate.of(endYear, endMonth, endDay);
 
+    for (LocalDate currentDate = startDate; currentDate.isBefore(endDate); currentDate = currentDate.plusDays(1)) {
+      if (currentDate.isAfter(LocalDate.now().minusDays(1)))
+        continue;
 
-    for (int year = startYear; year <= endYear; year++) {
-
-      int loopstartMonth = 1;
-      int loopLastMonth = 12;
-
-      if (year == endYear)
-        loopLastMonth = endMonth;
-
-      if (year == startYear)
-        loopstartMonth = startMonth;
-
-      for (int month = loopstartMonth; month <= loopLastMonth; month++) {
-        LocalDate localDate = LocalDate.of(year, month, 1);
-        localDate = localDate.withDayOfMonth(localDate.lengthOfMonth());
-
-        int loopLastDay = 1;
-        int loopStartDay = 1;
-
-        loopLastDay = localDate.with(TemporalAdjusters.lastDayOfMonth()).getDayOfMonth();
-
-        if (year >= endYear && month >= endMonth) {
-          loopLastDay = localEndDay;
-        }
-
-        if (year == startYear && month == startMonth) {
-          loopStartDay = localStartDay;
-        }
-        for (int day = loopStartDay; day <= loopLastDay; day++) {
-          LocalDate runDate = localDate.withDayOfMonth(day);
-
-          if (runDate.isAfter(LocalDate.now().minusDays(1)))
-            return;
-
-          localDates.add(runDate);
+      if (currentDate.getDayOfWeek() == DayOfWeek.SATURDAY
+        || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY
+        || wasDayBeforeRunDateDayDayOff(currentDate))
+        continue;
 
 
-        }
-
-        List<ConfigDTO> configDTOS = localDates.stream().filter(current -> {
-            if (current.getDayOfWeek() != DayOfWeek.SATURDAY
-              && current.getDayOfWeek() != DayOfWeek.SUNDAY
-              && !wasDayBeforeRunDateDayDayOff(current)
-              && !isApiCallToElevated())
-              return true;
-            return false;
-          }
-        ).map(filtred -> {
-
-          ConfigDTO configDTO = new ConfigDTO();
-          configDTO.setCode(LOADER);
-          configDTO.setType(SPLIT_JOBS);
-          configDTO.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), 0));
-          return configDTO;
-
-        }).collect(Collectors.toList());
-
-        splitConfigService.saveAll(configDTOS);
-      }
+      localDates.add(currentDate);
     }
+
+
+    List<ConfigDTO> configDTOS = localDates.stream().map(filtred -> {
+
+      ConfigDTO configDTO = new ConfigDTO();
+      configDTO.setCode(LOADER);
+      configDTO.setType(SPLIT_JOBS);
+      configDTO.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, filtred.format(format1), JobStatus.SCHEDULED, LocalDateTime.now().format(formatMessage), 0));
+      return configDTO;
+
+    }).collect(Collectors.toList());
+
+    splitConfigService.saveAll(configDTOS);
   }
 
 
