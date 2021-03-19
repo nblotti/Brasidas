@@ -316,7 +316,7 @@ public class MarketLoaderService {
       DocumentContext content = JsonPath.parse(resultJson.getBody());
       JSONArray json = content.read(apiLevelStr);
       String type = json.get(0).toString();
-      if (type != null && Integer.parseInt(type) > 80000)
+      if (type != null && Integer.parseInt(type) > 85000)
         return true;
     } catch (Exception ex) {
       log.error(ex.getMessage());
