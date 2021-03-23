@@ -49,9 +49,10 @@ import java.util.logging.Logger;
 public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> {
 
 
-
   private final static String EXCHANGE_NYSE = "NYSE";
   private final static String EXCHANGE_NASDAQ = "NASDAQ";
+
+  private static final int MIN_FIRM = 4000;
 
   @Autowired
   private DateTimeFormatter format1;
@@ -247,7 +248,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
           loadMarket(MarketLoader.this.EXCHANGE_NYSE, stateContext);
         } catch (Exception ex) {
           variables.put("T1", false);
-          log.error(ex.toString());
+          log.error(ex.getMessage());
           return;
         }
         variables.put("T1", true);
@@ -268,7 +269,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
           loadMarket(MarketLoader.this.EXCHANGE_NASDAQ, stateContext);
         } catch (Exception ex) {
           variables.put("T2", false);
-          log.error(ex.toString());
+          log.error(ex.getMessage());
           return;
         }
         variables.put("T2", true);
@@ -318,11 +319,25 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
     LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
 
     log.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
-    List<ExchangeFirmQuoteDTO> firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
+    int maxretry = 1;
+
+    List<ExchangeFirmQuoteDTO> firmsForGivenExchange = new ArrayList<>();
+    while (firmsForGivenExchange.isEmpty() && maxretry <= 3)
+      try {
+        firmsForGivenExchange = firmService.getExchangeDataForDate(runDate, exchange);
+      } catch (Exception ex) {
+        log.error(String.format("Error accessing market data (%s try)", maxretry));
+        log.error(ex.toString());
+        maxretry++;
+      }
 
     int size = firmsForGivenExchange.size();
 
-    for (int i = 0; i < firmsForGivenExchange.size(); i++) {
+    if (size < MIN_FIRM) {
+      throw new IllegalStateException("Not enough firm found to start job");
+    }
+    for (
+      int i = 0; i < firmsForGivenExchange.size(); i++) {
       ExchangeFirmQuoteDTO current = firmsForGivenExchange.get(i);
 
       loadAndSave(exchange, current, runDate, context);
