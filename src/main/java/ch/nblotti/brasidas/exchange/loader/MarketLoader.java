@@ -52,7 +52,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
   private final static String EXCHANGE_NYSE = "NYSE";
   private final static String EXCHANGE_NASDAQ = "NASDAQ";
 
-  private static final int MIN_FIRM = 4000;
+  private static final int MIN_FIRM = 2000;
 
   @Autowired
   private DateTimeFormatter format1;
