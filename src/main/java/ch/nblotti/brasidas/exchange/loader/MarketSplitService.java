@@ -75,7 +75,7 @@ public class MarketSplitService {
   private StateMachine<MARKET_SPLIT_STATES, MARKET_SPLIT_EVENTS> splitStateMachine;
 
   @Autowired
-  private RestTemplate externalRestTemplate;
+  private RestTemplate externalShortRestTemplate;
 
 
   @PostConstruct
@@ -231,7 +231,7 @@ public class MarketSplitService {
   private boolean isApiCallToElevated() {
 
     try {
-      ResponseEntity<String> resultJson = externalRestTemplate.getForEntity(String.format(apiStatus, apiKey), String.class);
+      ResponseEntity<String> resultJson = externalShortRestTemplate.getForEntity(String.format(apiStatus, apiKey), String.class);
       if (resultJson.getStatusCode() != HttpStatus.OK)
         return true;
 

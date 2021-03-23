@@ -14,8 +14,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Component
 @Slf4j
@@ -43,7 +41,7 @@ class EODExchangeRepository {
   protected DateTimeFormatter format1;
 
   @Autowired
-  protected RestTemplate externalRestTemplate;
+  protected RestTemplate externalLongRestTemplate;
 
   @Value("${spring.application.eod.api.key}")
   protected String apiKey;
@@ -79,7 +77,7 @@ class EODExchangeRepository {
       boolean networkErrorHandling = false;
       while (!networkErrorHandling) {
         try {
-          ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
+          ResponseEntity<String> entity = externalLongRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {

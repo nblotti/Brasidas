@@ -34,7 +34,7 @@ class EODFirmHighlightsRepository {
   private static final int MAX_RETRY = 100;
 
   @Autowired
-  protected RestTemplate externalRestTemplate;
+  protected RestTemplate externalShortRestTemplate;
 
 
   @Value("${spring.application.eod.api.key}")
@@ -70,7 +70,7 @@ class EODFirmHighlightsRepository {
       int networkErrorHandling = 0;
       while (networkErrorHandling< MAX_RETRY) {
         try {
-          ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
+          ResponseEntity<String> entity = externalShortRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {

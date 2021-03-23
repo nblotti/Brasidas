@@ -33,7 +33,7 @@ public class EODFirmSplitRepository {
   protected DateTimeFormatter format1;
 
   @Autowired
-  protected RestTemplate externalRestTemplate;
+  protected RestTemplate externalShortRestTemplate;
 
   @Value("${spring.application.eod.api.key}")
   protected String apiKey;
@@ -53,7 +53,7 @@ public class EODFirmSplitRepository {
     boolean networkErrorHandling = false;
     while (!networkErrorHandling) {
       try {
-        ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
+        ResponseEntity<String> entity = externalShortRestTemplate.getForEntity(finalUrl, String.class);
         return entity;
       } catch (Exception ex) {
         log.error(String.format("Error, retrying\r\n%s", ex.getMessage()));

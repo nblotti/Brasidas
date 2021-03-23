@@ -104,7 +104,7 @@ public class BrasidasApplication {
 
 
   @Bean
-  public RestTemplate externalRestTemplate(RestTemplateBuilder restTemplateBuilder) {
+  public RestTemplate externalLongRestTemplate(RestTemplateBuilder restTemplateBuilder) {
 
 
     RestTemplate restTemplate = restTemplateBuilder
@@ -113,6 +113,19 @@ public class BrasidasApplication {
       .build();
     return restTemplate;
   }
+
+  @Bean
+  public RestTemplate externalShortRestTemplate(RestTemplateBuilder restTemplateBuilder) {
+
+
+    RestTemplate restTemplate = restTemplateBuilder
+      .setConnectTimeout(Duration.ofSeconds(30))
+      .setReadTimeout(Duration.ofSeconds(30))
+      .build();
+    return restTemplate;
+  }
+
+
 
 
   @Bean

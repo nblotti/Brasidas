@@ -34,7 +34,7 @@ public class EODIndexQuoteRepository {
   public String indexHistoryStr = "$.[*]";
 
   @Autowired
-  protected RestTemplate externalRestTemplate;
+  protected RestTemplate externalShortRestTemplate;
 
 
   @Value("${spring.application.eod.api.key}")
@@ -75,7 +75,7 @@ public class EODIndexQuoteRepository {
       boolean networkErrorHandling = false;
       while (!networkErrorHandling) {
         try {
-          ResponseEntity<String> entity = externalRestTemplate.getForEntity(finalUrl, String.class);
+          ResponseEntity<String> entity = externalShortRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
           return entity;
         } catch (Exception ex) {

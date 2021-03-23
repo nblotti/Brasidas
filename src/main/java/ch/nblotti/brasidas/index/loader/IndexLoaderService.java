@@ -76,7 +76,7 @@ public class IndexLoaderService {
   private long maxRunningTime;
 
   @Autowired
-  private RestTemplate externalRestTemplate;
+  private RestTemplate externalShortRestTemplate;
 
 
   @PostConstruct
@@ -228,7 +228,7 @@ public class IndexLoaderService {
   private boolean isApiCallToElevated() {
 
     try {
-      ResponseEntity<String> resultJson = externalRestTemplate.getForEntity(String.format(apiStatus, apiKey), String.class);
+      ResponseEntity<String> resultJson = externalShortRestTemplate.getForEntity(String.format(apiStatus, apiKey), String.class);
       if (resultJson.getStatusCode() != HttpStatus.OK)
         return true;
 

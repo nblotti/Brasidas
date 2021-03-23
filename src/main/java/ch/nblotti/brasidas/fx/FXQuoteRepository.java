@@ -24,7 +24,7 @@ public class FXQuoteRepository {
 
 
   @Autowired
-  private RestTemplate externalRestTemplate;
+  private RestTemplate externalShortRestTemplate;
 
   @Autowired
   private CacheManager cacheManager;
@@ -52,7 +52,7 @@ public class FXQuoteRepository {
 
     if (!cachedQuotes.containsKey(currencyPair)) {
       ResponseEntity<FXQuoteDTO[]> responseEntity =
-        externalRestTemplate.getForEntity(String.format(quoteUrl, currencyPair + "." + FOREX, eodApiToken), FXQuoteDTO[].class);
+        externalShortRestTemplate.getForEntity(String.format(quoteUrl, currencyPair + "." + FOREX, eodApiToken), FXQuoteDTO[].class);
 
       List<FXQuoteDTO> quotes = Arrays.asList(responseEntity.getBody());
 

@@ -34,7 +34,7 @@ public class EODIndexCompositionRepository {
 
 
   @Autowired
-  private RestTemplate externalRestTemplate;
+  private RestTemplate externalShortRestTemplate;
 
 
   public Collection<EODIndexCompositionDTO> getIndexComposition(String index) {
@@ -42,7 +42,7 @@ public class EODIndexCompositionRepository {
 
     String finalUrl = String.format(eodIndexComponentUrl, index, apiKey);
 
-    final ResponseEntity<String> response = externalRestTemplate.getForEntity(finalUrl, String.class);
+    final ResponseEntity<String> response = externalShortRestTemplate.getForEntity(finalUrl, String.class);
 
     DocumentContext jsonContext = JsonPath.parse(response.getBody());
 
