@@ -205,6 +205,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
         context.getExtendedState().getVariables().put("loadId", id);
         context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
 
+        Map<Object, Object> variables = context.getExtendedState().getVariables();
+        variables.put("T1", true);
+        variables.put("T2", true);
+
 
         ConfigDTO current = marketLoadConfigService.findById(id);
 
@@ -250,7 +254,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
           log.error(ex.getMessage());
           return;
         }
-        variables.put("T1", true);
+
       }
     };
 
@@ -271,7 +275,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
           log.error(ex.getMessage());
           return;
         }
-        variables.put("T2", true);
+
       }
     };
 
