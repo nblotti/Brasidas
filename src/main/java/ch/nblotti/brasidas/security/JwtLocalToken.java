@@ -90,6 +90,7 @@ public class JwtLocalToken {
       } catch (Exception ex) {
         try {
           log.error(String.format("Error creating JWT (technical login), retrying in 5s"));
+          log.error(ex.getMessage());
           Thread.sleep(RETRY_SLEEP_TIME_IN_MS);
         } catch (InterruptedException e) {
           e.printStackTrace();
