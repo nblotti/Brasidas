@@ -41,7 +41,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.logging.Logger;
 
 @Configuration
 @Slf4j
@@ -160,8 +159,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
       .and()
       .withChoice()
       .source(MARKET_LOADER_STATES.CHOICE)
-      .first(MARKET_LOADER_STATES.ERROR_STATE, tasksChoiceGuard())
-      .last(MARKET_LOADER_STATES.CLEANUP)
+      .first(MARKET_LOADER_STATES.CLEANUP, tasksChoiceGuard())
+      .last(MARKET_LOADER_STATES.ERROR_STATE)
       .and()
       .withExternal()
       .source(MARKET_LOADER_STATES.CLEANUP).target(MARKET_LOADER_STATES.WAITING_EVENT).event(MARKET_LOADER_EVENTS.SUCCESS)
@@ -284,11 +283,16 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
 
       @Override
       public boolean evaluate(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
-        Map<Object, Object> variables = context.getExtendedState().getVariables();
-        return !(ObjectUtils.nullSafeEquals(variables.get("T1"), true)
-          && ObjectUtils.nullSafeEquals(variables.get("T2"), true));
+
+        return isMarketLoadingProcessStatusStillValid(context);
       }
     };
+  }
+
+  private boolean isMarketLoadingProcessStatusStillValid(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
+    Map<Object, Object> variables = context.getExtendedState().getVariables();
+    return ObjectUtils.nullSafeEquals(variables.get("T1"), true)
+      && ObjectUtils.nullSafeEquals(variables.get("T2"), true);
   }
 
   @Bean
@@ -339,6 +343,9 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
     for (
       int i = 0; i < firmsForGivenExchange.size(); i++) {
       ExchangeFirmQuoteDTO current = firmsForGivenExchange.get(i);
+
+      if (!isMarketLoadingProcessStatusStillValid(context))
+        throw new IllegalStateException(String.format("%s - %s Job stopped in another thread, exiting", runDate.format(format1), exchange));
 
       loadAndSave(exchange, current, runDate, context);
       if (i != 0) {
