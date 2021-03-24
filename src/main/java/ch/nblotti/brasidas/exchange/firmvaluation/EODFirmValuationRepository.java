@@ -3,6 +3,10 @@ package ch.nblotti.brasidas.exchange.firmvaluation;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONObject;
+import org.modelmapper.AbstractConverter;
+import org.modelmapper.Converter;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -10,10 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Component
 @Slf4j
@@ -39,6 +42,8 @@ class EODFirmValuationRepository {
   @Autowired
   Cache cacheOne;
 
+  @Autowired
+  protected ModelMapper modelMapper;
 
 
   public Optional<EODValuationDTO> getValuationByDateAndFirm(LocalDate runDate, String exchange, String symbol) {
@@ -47,11 +52,15 @@ class EODFirmValuationRepository {
     String finalUrl = String.format(firmUrl, symbol, exchange, apiKey);
     final ResponseEntity<String> response = getStringResponseEntity(finalUrl);
     try {
-      DocumentContext content = JsonPath.parse(response.getBody());
+      DocumentContext jsonContext = JsonPath.parse(response.getBody());
 
-      EODValuationDTO EODValuationDTO = content.read(valuationStr, EODValuationDTO.class);
 
-      return Optional.of(EODValuationDTO);
+      JSONObject eODExchangeDTOs = jsonContext.read(valuationStr, JSONObject.class);
+
+      EODValuationDTO eODValuationDTO = modelMapper.map(eODExchangeDTOs, EODValuationDTO.class);
+
+      return Optional.of(eODValuationDTO);
+
     } catch (Exception ex) {
       log.warn(String.format("Error, mapping valuation for symbol %s \r\n%s", symbol, ex.getMessage()));
       return Optional.empty();
@@ -61,11 +70,10 @@ class EODFirmValuationRepository {
   }
 
 
-
   protected ResponseEntity<String> getStringResponseEntity(String finalUrl) {
     if (cacheOne.get(finalUrl.hashCode()) == null) {
       int networkErrorHandling = 0;
-      while (networkErrorHandling< MAX_RETRY) {
+      while (networkErrorHandling < MAX_RETRY) {
         try {
           ResponseEntity<String> entity = externalShortRestTemplate.getForEntity(finalUrl, String.class);
           cacheOne.put(finalUrl.hashCode(), entity);
@@ -81,6 +89,30 @@ class EODFirmValuationRepository {
     return (ResponseEntity<String>) cacheOne.get(finalUrl.hashCode()).get();
   }
 
+
+  @PostConstruct
+  void initFirmQuoteMapper() {
+
+    Converter<JSONObject, EODValuationDTO> toUppercase = new AbstractConverter<JSONObject, EODValuationDTO>() {
+
+      @Override
+      protected EODValuationDTO convert(JSONObject firmDTO) {
+        EODValuationDTO eodValuationDTO = new EODValuationDTO();
+
+        eodValuationDTO.setTrailingPE(Float.parseFloat(firmDTO.getAsString("TrailingPE")));
+        eodValuationDTO.setForwardPE(Float.parseFloat(firmDTO.getAsString("ForwardPE")));
+        eodValuationDTO.setPriceSalesTTM(Float.parseFloat(firmDTO.getAsString("PriceSalesTTM")));
+        eodValuationDTO.setPriceBookMRQ(Float.parseFloat(firmDTO.getAsString("PriceBookMRQ")));
+        eodValuationDTO.setEnterpriseValueRevenue(Float.parseFloat(firmDTO.getAsString("EnterpriseValueRevenue")));
+        eodValuationDTO.setEnterpriseValueEbitda(Float.parseFloat(firmDTO.getAsString("EnterpriseValueEbitda")));
+
+        return eodValuationDTO;
+      }
+    };
+
+    modelMapper.addConverter(toUppercase);
+
+  }
 
 
 }

@@ -81,11 +81,11 @@ public class FirmInfoService {
         firmInfoDTO.setCurrencySymbol(eODFirmInfosDTO.getCurrencySymbol());
         firmInfoDTO.setCountryISO(eODFirmInfosDTO.getCountryISO());
         firmInfoDTO.setIsin(eODFirmInfosDTO.getISIN());
-        firmInfoDTO.setcCusip(eODFirmInfosDTO.getCUSIP());
-        firmInfoDTO.setcCik(eODFirmInfosDTO.getCIK());
+        firmInfoDTO.setCusip(eODFirmInfosDTO.getCUSIP());
+        firmInfoDTO.setCik(eODFirmInfosDTO.getCIK());
         firmInfoDTO.setEmployerIdNumber(eODFirmInfosDTO.getEmployerIdNumber());
         firmInfoDTO.setFiscalYearEnd(eODFirmInfosDTO.getFiscalYearEnd());
-        firmInfoDTO.setiPODate(eODFirmInfosDTO.getIPODate());
+        firmInfoDTO.setIPODate(eODFirmInfosDTO.getIPODate());
         firmInfoDTO.setInternationalDomestic(eODFirmInfosDTO.getInternationalDomestic());
         firmInfoDTO.setSector(eODFirmInfosDTO.getSector());
 

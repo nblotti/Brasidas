@@ -1,8 +1,13 @@
 package ch.nblotti.brasidas.exchange.firmsharestats;
 
+import ch.nblotti.brasidas.exchange.firminfos.EODFirmInfosDTO;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONObject;
+import org.modelmapper.AbstractConverter;
+import org.modelmapper.Converter;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -10,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -40,6 +46,9 @@ class EODFirmSharesStatsRepository {
   @Autowired
   Cache cacheOne;
 
+  @Autowired
+  protected ModelMapper modelMapper;
+
 
   public Optional<EODSharesStatsDTO> getSharesStatByDateAndExchangeAndFirm(LocalDate runDate, String exchange, String symbol) {
 
@@ -49,9 +58,12 @@ class EODFirmSharesStatsRepository {
     try {
       DocumentContext jsonContext = JsonPath.parse(response.getBody());
 
-      EODSharesStatsDTO EODSharesStatsDTO = jsonContext.read(sharesStatStr, EODSharesStatsDTO.class);
+      JSONObject eODExchangeDTOs = jsonContext.read(sharesStatStr,JSONObject.class);;
+
+      EODSharesStatsDTO EODSharesStatsDTO = modelMapper.map(eODExchangeDTOs, EODSharesStatsDTO.class);
 
       return Optional.of(EODSharesStatsDTO);
+
 
     } catch (Exception ex) {
       log.warn(String.format("Error, mapping Share stats for symbol %s \r\n%s", symbol, ex.getMessage()));
@@ -77,6 +89,34 @@ class EODFirmSharesStatsRepository {
     }
 
     return (ResponseEntity<String>) cacheOne.get(finalUrl.hashCode()).get();
+  }
+
+  @PostConstruct
+  void initFirmQuoteMapper() {
+
+    Converter<JSONObject, EODSharesStatsDTO> toUppercase = new AbstractConverter<JSONObject, EODSharesStatsDTO>() {
+
+      @Override
+      protected EODSharesStatsDTO convert(JSONObject firmDTO) {
+        EODSharesStatsDTO eODSharesStatsDTO = new EODSharesStatsDTO();
+
+        eODSharesStatsDTO.setSharesOutstanding(Long.parseLong(firmDTO.getAsString("SharesOutstanding")));
+        eODSharesStatsDTO.setSharesFloat(Long.parseLong(firmDTO.getAsString("SharesFloat")));
+        eODSharesStatsDTO.setPercentInsiders(Float.parseFloat(firmDTO.getAsString("PercentInsiders")));
+        eODSharesStatsDTO.setPercentInstitutions(Float.parseFloat(firmDTO.getAsString("PercentInstitutions")));
+        eODSharesStatsDTO.setSharesOutstanding(Long.parseLong(firmDTO.getAsString("SharesShort")));
+        eODSharesStatsDTO.setSharesShortPriorMonth(Long.parseLong(firmDTO.getAsString("SharesShortPriorMonth")));
+        eODSharesStatsDTO.setShortRatio(Float.parseFloat(firmDTO.getAsString("ShortRatio")));
+        eODSharesStatsDTO.setShortPercentOutstanding(Float.parseFloat(firmDTO.getAsString("ShortPercentOutstanding")));
+        eODSharesStatsDTO.setShortPercentFloat(Float.parseFloat(firmDTO.getAsString("ShortPercentFloat")));
+
+
+        return eODSharesStatsDTO;
+      }
+    };
+
+    modelMapper.addConverter(toUppercase);
+
   }
 
 

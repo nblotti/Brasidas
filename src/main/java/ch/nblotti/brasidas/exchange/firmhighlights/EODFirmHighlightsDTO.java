@@ -1,5 +1,12 @@
 package ch.nblotti.brasidas.exchange.firmhighlights;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class EODFirmHighlightsDTO {
 
   public long MarketCapitalization;
@@ -28,107 +35,4 @@ public class EODFirmHighlightsDTO {
   public double DilutedEpsTTM;
   public double QuarterlyEarningsGrowthYOY;
 
-  public EODFirmHighlightsDTO() {
-
-  }
-
-  public long getMarketCapitalization() {
-    return MarketCapitalization;
-  }
-
-  public double getMarketCapitalizationMln() {
-    return MarketCapitalizationMln;
-  }
-
-  public long getEBITDA() {
-    return EBITDA;
-  }
-
-  public double getPERatio() {
-    return PERatio;
-  }
-
-  public double getPEGRatio() {
-    return PEGRatio;
-  }
-
-  public double getWallStreetTargetPrice() {
-    return WallStreetTargetPrice;
-  }
-
-  public double getBookValue() {
-    return BookValue;
-  }
-
-  public double getDividendShare() {
-    return DividendShare;
-  }
-
-  public double getDividendYield() {
-    return DividendYield;
-  }
-
-  public double getEarningsShare() {
-    return EarningsShare;
-  }
-
-  public double getEPSEstimateCurrentYear() {
-    return EPSEstimateCurrentYear;
-  }
-
-  public double getEPSEstimateNextYear() {
-    return EPSEstimateNextYear;
-  }
-
-  public double getEPSEstimateNextQuarter() {
-    return EPSEstimateNextQuarter;
-  }
-
-  public double getEPSEstimateCurrentQuarter() {
-    return EPSEstimateCurrentQuarter;
-  }
-
-  public String getMostRecentQuarter() {
-    return MostRecentQuarter;
-  }
-
-  public double getProfitMargin() {
-    return ProfitMargin;
-  }
-
-  public double getOperatingMarginTTM() {
-    return OperatingMarginTTM;
-  }
-
-  public double getReturnOnAssetsTTM() {
-    return ReturnOnAssetsTTM;
-  }
-
-  public double getReturnOnEquityTTM() {
-    return ReturnOnEquityTTM;
-  }
-
-  public long getRevenueTTM() {
-    return RevenueTTM;
-  }
-
-  public double getRevenuePerShareTTM() {
-    return RevenuePerShareTTM;
-  }
-
-  public double getQuarterlyRevenueGrowthYOY() {
-    return QuarterlyRevenueGrowthYOY;
-  }
-
-  public long getGrossProfitTTM() {
-    return GrossProfitTTM;
-  }
-
-  public double getDilutedEpsTTM() {
-    return DilutedEpsTTM;
-  }
-
-  public double getQuarterlyEarningsGrowthYOY() {
-    return QuarterlyEarningsGrowthYOY;
-  }
 }
