@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: nblotti
-          image: nblotti/brasidas:v0.0.48
+          image: nblotti/brasidas:v0.0.92
           ports:
             - containerPort: 8080
           livenessProbe:

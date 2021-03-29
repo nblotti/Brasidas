@@ -30,10 +30,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
@@ -70,6 +69,8 @@ public class MarketLoaderService {
 
   private String apiLevelStr = "$..apiRequests";
 
+  private String dayOff = "$..ExchangeHolidays";
+
   @Resource
   private StateMachine<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> marketLoaderStateMachine;
 
@@ -81,6 +82,10 @@ public class MarketLoaderService {
 
   @Autowired
   private RestTemplate externalShortRestTemplate;
+
+
+  @Value("${eod.market.dayoff}")
+  private String marketDayOff;
 
 
   @PostConstruct
@@ -171,7 +176,7 @@ public class MarketLoaderService {
 
       if (currentDate.getDayOfWeek() == DayOfWeek.SATURDAY
         || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY
-        || wasDayBeforeRunDateDayDayOff(currentDate))
+        || isRunDateDayDayOff(currentDate))
         continue;
 
 
@@ -204,6 +209,8 @@ public class MarketLoaderService {
 
   @Scheduled(cron = "${market.loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
+
+
 
 
     if (isApiCallToElevated())
@@ -268,6 +275,13 @@ public class MarketLoaderService {
 
 
     LocalDate runDate = marketLoadConfigService.parseDate(current);
+
+    if(isRunDateDayDayOff(runDate)) {
+      current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), marketLoadConfigService.isPartial(current), JobStatus.CANCELED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current)));
+      marketLoadConfigService.update(current);
+      return;
+    }
+
     Message<MARKET_LOADER_EVENTS> message = MessageBuilder
       .withPayload(MARKET_LOADER_EVENTS.EVENT_RECEIVED)
       .setHeader("runDate", runDate)
@@ -301,9 +315,29 @@ public class MarketLoaderService {
   }
 
 
-  private boolean wasDayBeforeRunDateDayDayOff(LocalDate runDate) {
+  private boolean isRunDateDayDayOff(LocalDate runDate) {
+
+    try {
+      ResponseEntity<String> resultJson;
+
+      do {
+        resultJson = externalShortRestTemplate.getForEntity(String.format(marketDayOff, apiKey, runDate.format(format1), runDate.format(format1)), String.class);
+        Thread.sleep(500);
+
+      } while (resultJson.getStatusCode() != HttpStatus.OK);
+
+      DocumentContext content = JsonPath.parse(resultJson.getBody());
+      JSONArray json = content.read(dayOff);
+
+      if (json != null && ((LinkedHashMap) json.get(0)).size() != 0)
+        return true;
+    } catch (Exception ex) {
+      log.error(ex.getMessage());
+      return false;
+    }
     return false;
   }
+
 
   private boolean isApiCallToElevated() {
 

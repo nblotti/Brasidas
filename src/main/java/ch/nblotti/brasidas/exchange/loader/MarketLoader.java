@@ -201,6 +201,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
         Message<MARKET_LOADER_EVENTS> message;
 
         LocalDate runDate = (LocalDate) context.getMessageHeader("runDate");
+
+
         Long id = (Long) context.getMessageHeader("loadId");
         context.getExtendedState().getVariables().put("loadId", id);
         context.getExtendedState().getVariables().put("runTime", LocalDateTime.now());
@@ -212,7 +214,10 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
 
         ConfigDTO current = marketLoadConfigService.findById(id);
 
-        current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), marketLoadConfigService.isPartial(current), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current) + 1));
+        Boolean partial = marketLoadConfigService.isPartial(current);
+        context.getExtendedState().getVariables().put("partial", partial);
+
+        current.setValue(String.format(MarketLoadConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), partial, JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current) + 1));
         marketLoadConfigService.update(current);
 
 
@@ -326,6 +331,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
     LocalDate runDate = (LocalDate) context.getExtendedState().getVariables().get("runDate");
     LocalDateTime runTimeStart = (LocalDateTime) context.getExtendedState().getVariables().get("runTime");
 
+
     log.info(String.format("%s - %s - Starting load process", exchange, runDate.format(format1)));
     int maxretry = 1;
 
@@ -424,6 +430,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
   private void loadAndSave(String exchange, ExchangeFirmQuoteDTO firm, LocalDate runDate, StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
     String type = "";
+    Boolean partial = (Boolean) context.getExtendedState().getVariables().get("partial");
+
     if (MARKET_LOADER_STATES.ERROR.equals(context.getStateMachine().getState().getId()))
       return;
 
@@ -451,6 +459,9 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
         log.error(String.format("%s - %s -  Error saving quote", exchange, currentCode));
         log.error(e.getMessage());
       }
+      if (partial)
+        return;
+
       try {
         FirmInfoService firmInfoService = beanFactory.getBean(FirmInfoService.class);
         Optional<FirmInfoDTO> info = getFirmStockInfo(runDate, firm);
