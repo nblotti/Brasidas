@@ -84,10 +84,6 @@ public class DayOffLoaderService {
 
   public void startDayOff(Integer year) {
 
-
-
-
-
       ConfigDTO configDTO = new ConfigDTO();
       configDTO.setCode(LOADER);
       configDTO.setType(DAYOFF_JOBS);
@@ -97,7 +93,7 @@ public class DayOffLoaderService {
   }
 
 
-  //@Scheduled(cron = "${dayoff.yearly.cron.expression}")
+  @Scheduled(cron = "${dayoff.yearly.cron.expression}")
   @Transactional
   public void scheduleDailyTask() {
 
