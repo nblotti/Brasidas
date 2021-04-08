@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.split;
+package ch.nblotti.brasidas.exchange.splitloader;
 
 class EODFirmSplitDTO {
 

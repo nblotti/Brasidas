@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.split;
+package ch.nblotti.brasidas.exchange.splitloader;
 
 
 import org.modelmapper.AbstractConverter;
@@ -14,7 +14,6 @@ import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 

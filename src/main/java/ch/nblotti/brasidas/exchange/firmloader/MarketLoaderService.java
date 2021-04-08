@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.firmloader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;

@@ -1,13 +1,11 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.splitloader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;
 import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmQuoteDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
-import ch.nblotti.brasidas.exchange.split.FirmSplitDTO;
-import ch.nblotti.brasidas.exchange.split.FirmSplitService;
-import ch.nblotti.brasidas.exchange.split.SplitConfigService;
+import ch.nblotti.brasidas.exchange.firmloader.MarketLoadConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -218,7 +215,7 @@ public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_
               }
             }
             ConfigDTO current = marketLoadConfigService.findById(id);
-            current.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current) + 1));
+            current.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current)));
             marketLoadConfigService.save(current);
             message = MessageBuilder
               .withPayload(MARKET_SPLIT_EVENTS.SUCCESS).build();

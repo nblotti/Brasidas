@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.firmloader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;
@@ -72,9 +72,6 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
   @Value("${index.list}")
   private String indexList;
 
-
-  @Value("${nyse.closed.days}")
-  public String nyseClosedDays;
 
 
   @Autowired

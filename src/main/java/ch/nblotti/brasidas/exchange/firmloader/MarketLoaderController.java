@@ -1,12 +1,11 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.firmloader;
 
+import ch.nblotti.brasidas.exchange.splitloader.SplitLoaderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.logging.Logger;
 
 
 @RestController
@@ -24,7 +23,7 @@ public class MarketLoaderController {
   private MarketLoaderService marketLoaderService;
 
   @Autowired
-  private MarketSplitService marketSplitService;
+  private SplitLoaderService splitLoaderService;
 
 
 
@@ -53,7 +52,7 @@ public class MarketLoaderController {
       throw new IllegalArgumentException("End month or start month cannot be bigger than 12. start month cannot be bigger than end month");
     }
 
-    marketSplitService.startSplit(startYear, startMonth, startDay, endYear, endMonth, endDay);
+    splitLoaderService.startSplit(startYear, startMonth, startDay, endYear, endMonth, endDay);
   }
 
 

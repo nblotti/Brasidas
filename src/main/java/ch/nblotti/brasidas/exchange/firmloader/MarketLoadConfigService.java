@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.firmloader;
 
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.logging.Logger;
 
 
 @Service

@@ -1,8 +1,8 @@
 package ch.nblotti.brasidas;
 
 
-import ch.nblotti.brasidas.exchange.loader.MARKET_LOADER_EVENTS;
-import ch.nblotti.brasidas.exchange.loader.MARKET_LOADER_STATES;
+import ch.nblotti.brasidas.exchange.firmloader.MARKET_LOADER_EVENTS;
+import ch.nblotti.brasidas.exchange.firmloader.MARKET_LOADER_STATES;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.statemachine.StateMachine;
@@ -20,8 +20,6 @@ import java.time.format.DateTimeFormatter;
 public class PingController {
 
 
-  @Resource
-  private StateMachine<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> sp500LoaderStateMachine;
 
   @Autowired
   protected DateTimeFormatter format1;

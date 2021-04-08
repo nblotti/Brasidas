@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.splitloader;
 
 public enum MARKET_SPLIT_STATES {
   READY,

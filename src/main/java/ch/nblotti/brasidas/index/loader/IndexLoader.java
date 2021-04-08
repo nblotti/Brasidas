@@ -72,8 +72,6 @@ public class IndexLoader extends EnumStateMachineConfigurerAdapter<INDEX_LOADER_
   private String indexList;
 
 
-  @Value("${nyse.closed.days}")
-  public String nyseClosedDays;
 
 
   @Autowired

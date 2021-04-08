@@ -1,8 +1,8 @@
-package ch.nblotti.brasidas.exchange.loader;
+package ch.nblotti.brasidas.exchange.splitloader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;
-import ch.nblotti.brasidas.exchange.split.SplitConfigService;
+import ch.nblotti.brasidas.exchange.firmloader.MARKET_LOADER_EVENTS;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
@@ -27,16 +27,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
 @Service
 @Slf4j
-public class MarketSplitService {
+public class SplitLoaderService {
 
 
   private static final int WORKER_THREAD_POOL = 1;

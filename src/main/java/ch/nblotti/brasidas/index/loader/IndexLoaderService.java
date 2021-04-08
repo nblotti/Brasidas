@@ -1,7 +1,6 @@
 package ch.nblotti.brasidas.index.loader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
-import ch.nblotti.brasidas.exchange.loader.MARKET_CLEANUP_EVENTS;
 import ch.nblotti.brasidas.configuration.JobStatus;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -27,7 +26,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

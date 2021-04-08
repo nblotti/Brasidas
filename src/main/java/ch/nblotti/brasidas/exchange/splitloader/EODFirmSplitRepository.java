@@ -1,4 +1,4 @@
-package ch.nblotti.brasidas.exchange.split;
+package ch.nblotti.brasidas.exchange.splitloader;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -13,8 +13,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Component
 @Slf4j
