@@ -214,7 +214,7 @@ public class DayOffLoader extends EnumStateMachineConfigurerAdapter<DAYOFF_STATE
     LocalDate to = LocalDate.of(year, 12, 31);
 
     for (LocalDate currentDate = from; currentDate.isBefore(to); currentDate = currentDate.plusWeeks(1)) {
-      weeks.add(new TimeDTO(currentDate, currentDate.plusWeeks(1).minusDays(1), ChronoUnit.WEEKS,currentDate.get(WeekFields.ISO.weekOfYear())+1));
+      weeks.add(new TimeDTO(currentDate, currentDate.plusWeeks(1).minusDays(1), ChronoUnit.WEEKS,currentDate.get(WeekFields.ISO.weekOfYear())));
     }
     return weeks;
   }
