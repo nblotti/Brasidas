@@ -3,15 +3,10 @@ package ch.nblotti.brasidas.exchange.splitloader;
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;
 import ch.nblotti.brasidas.exchange.firmloader.MARKET_LOADER_EVENTS;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONArray;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -93,13 +88,10 @@ public class SplitLoaderService {
     LocalDate startDate = LocalDate.of(startYear, startMonth, startDay);
     LocalDate endDate = LocalDate.of(endYear, endMonth, endDay);
 
-    for (LocalDate currentDate = startDate; currentDate.isBefore(endDate); currentDate = currentDate.plusDays(1)) {
-      if (currentDate.isAfter(LocalDate.now().minusDays(1)))
-        continue;
+    for (LocalDate currentDate = startDate; currentDate.isEqual(endDate); currentDate = currentDate.plusDays(1)) {
 
       if (currentDate.getDayOfWeek() == DayOfWeek.SATURDAY
-        || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY
-        || wasDayBeforeRunDateDayDayOff(currentDate))
+        || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY)
         continue;
 
 
@@ -219,30 +211,6 @@ public class SplitLoaderService {
       return splitConfigService.isInGivenStatus(configDTO, status);
     }).collect(Collectors.toList());
 
-  }
-
-
-  private boolean wasDayBeforeRunDateDayDayOff(LocalDate runDate) {
-    return false;
-  }
-
-  private boolean isApiCallToElevated() {
-
-    try {
-      ResponseEntity<String> resultJson = externalShortRestTemplate.getForEntity(String.format(apiStatus, apiKey), String.class);
-      if (resultJson.getStatusCode() != HttpStatus.OK)
-        return true;
-
-
-      DocumentContext content = JsonPath.parse(resultJson.getBody());
-      JSONArray json = content.read(apiLevelStr);
-      String type = json.get(0).toString();
-      if (type != null && Integer.parseInt(type) > 85000)
-        return true;
-    } catch (Exception ex) {
-      log.error(ex.getMessage());
-    }
-    return false;
   }
 
 }

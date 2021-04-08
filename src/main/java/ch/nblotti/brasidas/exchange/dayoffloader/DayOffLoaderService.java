@@ -187,24 +187,4 @@ public class DayOffLoaderService {
   }
 
 
-
-  private boolean isApiCallToElevated() {
-
-    try {
-      ResponseEntity<String> resultJson = externalShortRestTemplate.getForEntity(String.format(apiStatus, apiKey), String.class);
-      if (resultJson.getStatusCode() != HttpStatus.OK)
-        return true;
-
-
-      DocumentContext content = JsonPath.parse(resultJson.getBody());
-      JSONArray json = content.read(apiLevelStr);
-      String type = json.get(0).toString();
-      if (type != null && Integer.parseInt(type) > 85000)
-        return true;
-    } catch (Exception ex) {
-      log.error(ex.getMessage());
-    }
-    return false;
-  }
-
 }

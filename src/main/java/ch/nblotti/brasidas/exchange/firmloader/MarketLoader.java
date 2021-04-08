@@ -2,9 +2,11 @@ package ch.nblotti.brasidas.exchange.firmloader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;
+import ch.nblotti.brasidas.exchange.dayoffloader.DayOffService;
 import ch.nblotti.brasidas.exchange.firm.EODFirmFundamentalRepository;
 import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
 import ch.nblotti.brasidas.exchange.firm.FirmService;
+import ch.nblotti.brasidas.exchange.firm.QuoteService;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsDTO;
 import ch.nblotti.brasidas.exchange.firmhighlights.FirmHighlightsService;
 import ch.nblotti.brasidas.exchange.firminfos.FirmInfoDTO;
@@ -66,6 +68,8 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
   @Autowired
   private MarketLoadConfigService marketLoadConfigService;
 
+  @Autowired
+  QuoteService quoteService;
 
   public static final String EVENT_MESSAGE_DAY = "firms";
 
@@ -390,6 +394,7 @@ public class MarketLoader extends EnumStateMachineConfigurerAdapter<MARKET_LOADE
       public void execute(StateContext<MARKET_LOADER_STATES, MARKET_LOADER_EVENTS> context) {
 
 
+        quoteService.refreshMaterializedView();
         Long id = (Long) context.getExtendedState().getVariables().get("loadId");
 
         ConfigDTO current = marketLoadConfigService.findById(id);

@@ -2,6 +2,7 @@ package ch.nblotti.brasidas.exchange.dayoffloader;
 
 import ch.nblotti.brasidas.configuration.ConfigDTO;
 import ch.nblotti.brasidas.configuration.JobStatus;
+import ch.nblotti.brasidas.exchange.firm.QuoteService;
 import ch.nblotti.brasidas.exchange.splitloader.SplitConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.BeanFactory;
@@ -45,7 +46,6 @@ public class DayOffLoader extends EnumStateMachineConfigurerAdapter<DAYOFF_STATE
   private static final String EXCHANGE = "US";
 
 
-
   @Autowired
   private DayOffConfigService dayOffConfigService;
 
@@ -56,6 +56,10 @@ public class DayOffLoader extends EnumStateMachineConfigurerAdapter<DAYOFF_STATE
 
   @Autowired
   DayOffService dayOffService;
+
+
+  @Autowired
+  QuoteService quoteService;
 
 
   @Override
@@ -214,7 +218,7 @@ public class DayOffLoader extends EnumStateMachineConfigurerAdapter<DAYOFF_STATE
     LocalDate to = LocalDate.of(year, 12, 31);
 
     for (LocalDate currentDate = from; currentDate.isBefore(to); currentDate = currentDate.plusWeeks(1)) {
-      weeks.add(new TimeDTO(currentDate, currentDate.plusWeeks(1).minusDays(1), ChronoUnit.WEEKS,currentDate.get(WeekFields.ISO.weekOfYear())));
+      weeks.add(new TimeDTO(currentDate, currentDate.plusWeeks(1).minusDays(1), ChronoUnit.WEEKS, currentDate.get(WeekFields.ISO.weekOfYear())));
     }
     return weeks;
   }
@@ -231,7 +235,7 @@ public class DayOffLoader extends EnumStateMachineConfigurerAdapter<DAYOFF_STATE
 
         List<DayOffDTO> dayOffs = (List<DayOffDTO>) context.getExtendedState().getVariables().get("dayoff");
         Integer year = (Integer) context.getExtendedState().getVariables().get("year");
-        Long id = (Long)  context.getExtendedState().getVariables().get("dayOffId");
+        Long id = (Long) context.getExtendedState().getVariables().get("dayOffId");
 
         if (dayOffs == null || year == null) {
           message = MessageBuilder
@@ -244,6 +248,7 @@ public class DayOffLoader extends EnumStateMachineConfigurerAdapter<DAYOFF_STATE
             dayOffService.saveTimeDto(timeDTO);
           }
 
+          quoteService.refreshMaterializedView();
 
           ConfigDTO current = dayOffConfigService.findById(id);
           current.setValue(String.format(DayOffConfigService.CONFIG_DTO_VALUE_STR, dayOffConfigService.parsedayOffYear(current), JobStatus.FINISHED, LocalDateTime.now().format(formatMessage), dayOffConfigService.retryCount(current)));

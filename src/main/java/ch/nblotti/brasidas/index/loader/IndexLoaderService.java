@@ -94,13 +94,11 @@ public class IndexLoaderService {
     LocalDate startDate = LocalDate.of(startYear, startMonth, startDay);
     LocalDate endDate = LocalDate.of(endYear, endMonth, endDay);
 
-    for (LocalDate currentDate = startDate; currentDate.isBefore(endDate); currentDate = currentDate.plusDays(1)) {
-      if (currentDate.isAfter(LocalDate.now().minusDays(1)))
-        continue;
+    for (LocalDate currentDate = startDate; currentDate.isEqual(endDate); currentDate = currentDate.plusDays(1)) {
+
 
       if (currentDate.getDayOfWeek() == DayOfWeek.SATURDAY
-        || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY
-        || wasDayBeforeRunDateDayDayOff(currentDate))
+        || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY)
         continue;
 
 
@@ -132,10 +130,6 @@ public class IndexLoaderService {
 
   @Scheduled(cron = "${index.loader.recurring.cron.expression}")
   public void scheduleRecurringDelayTask() {
-
-
-    if (isApiCallToElevated())
-      return;
 
 
     List<ConfigDTO> configDTOS = loadIndexConfigService.getAll(LOADER, INDEX_JOBS);
@@ -219,9 +213,6 @@ public class IndexLoaderService {
   }
 
 
-  private boolean wasDayBeforeRunDateDayDayOff(LocalDate runDate) {
-    return false;
-  }
 
   private boolean isApiCallToElevated() {
 
