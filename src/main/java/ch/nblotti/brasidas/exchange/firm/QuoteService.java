@@ -37,6 +37,6 @@ public class QuoteService {
 
   public void refreshMaterializedView() {
 
-    restTemplate.postForObject(quoteStr, null, Void.class);
+    restTemplate.postForObject(String.format("%refresh", quoteStr), null, Void.class);
   }
 }
