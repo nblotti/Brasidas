@@ -33,10 +33,13 @@ public class QuoteService {
 
   @Value("${referential.quotes.baseurl}")
   private String quoteStr;
+  @Value("${referential.index.baseurl}")
+  private String indexStr;
 
 
   public void refreshMaterializedView() {
 
-    restTemplate.postForObject(String.format("%refresh", quoteStr), null, Void.class);
+    restTemplate.postForObject(String.format("%srefresh", quoteStr), null, Void.class);
+    restTemplate.postForObject(String.format("%srefresh", indexStr), null, Void.class);
   }
 }
