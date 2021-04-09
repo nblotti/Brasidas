@@ -170,7 +170,7 @@ public class MarketLoaderService {
     LocalDate startDate = LocalDate.of(startYear, startMonth, startDay);
     LocalDate endDate = LocalDate.of(endYear, endMonth, endDay);
 
-    for (LocalDate currentDate = startDate; currentDate.isBefore(endDate); currentDate = currentDate.plusDays(1)) {
+    for (LocalDate currentDate = startDate; currentDate.isEqual(endDate); currentDate = currentDate.plusDays(1)) {
       if (currentDate.isAfter(LocalDate.now().minusDays(1)))
         continue;
 
