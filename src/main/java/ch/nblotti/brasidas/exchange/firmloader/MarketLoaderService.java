@@ -200,11 +200,11 @@ public class MarketLoaderService {
 
 
   @Scheduled(cron = "${market.loader.daily.cron.expression}")
-  @Transactional
   public void scheduleDailyTask() {
 
     LocalDate runDate = LocalDate.now().minusDays(1);
-    startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), Boolean.FALSE);
+    LocalDate today = LocalDate.now();
+    startLoad(runDate.getYear(), runDate.getMonthValue(), runDate.getDayOfMonth(), today.getYear(), today.getMonthValue(), today.getDayOfMonth(), Boolean.FALSE);
   }
 
   @Scheduled(cron = "${market.loader.recurring.cron.expression}")
