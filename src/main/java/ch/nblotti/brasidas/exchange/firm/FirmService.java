@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
@@ -40,7 +39,7 @@ public class FirmService {
   private EODExchangeRepository eODExchangeRepository;
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate internalRestTemplate;
 
   @Value("${referential.firm.quote.baseurl}")
   private String firmQuoteStr;
@@ -120,19 +119,19 @@ public class FirmService {
 
     HttpEntity<ExchangeFirmQuoteDTO> request = new HttpEntity<ExchangeFirmQuoteDTO>(firmsTO);
 
-    return restTemplate.postForObject(firmQuoteStr, request, ExchangeFirmQuoteDTO.class);
+    return internalRestTemplate.postForObject(firmQuoteStr, request, ExchangeFirmQuoteDTO.class);
 
   }
 
   public List<ExchangeFirmQuoteDTO> findAllByCodeOrderByDateAsc(String code) {
 
-    ResponseEntity<ExchangeFirmQuoteDTO[]> quotes = restTemplate.getForEntity(String.format("%s%s", firmQuoteStr, code), ExchangeFirmQuoteDTO[].class);
+    ResponseEntity<ExchangeFirmQuoteDTO[]> quotes = internalRestTemplate.getForEntity(String.format("%s%s", firmQuoteStr, code), ExchangeFirmQuoteDTO[].class);
     return Arrays.asList(quotes.getBody());
 
   }
 
 
   public void deleteByDate(LocalDate runDate) {
-    restTemplate.delete(String.format("%s?localDate=%s", firmQuoteStr, runDate.format(format1)));
+    internalRestTemplate.delete(String.format("%s?localDate=%s", firmQuoteStr, runDate.format(format1)));
   }
 }

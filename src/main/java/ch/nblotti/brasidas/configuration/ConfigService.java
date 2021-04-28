@@ -10,8 +10,6 @@ import org.springframework.web.client.RestTemplate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
-
 
 
 public abstract class ConfigService {
@@ -33,7 +31,7 @@ public abstract class ConfigService {
   private int maxRetry;
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate internalRestTemplate;
 
 
   @Autowired
@@ -46,7 +44,7 @@ public abstract class ConfigService {
   public ConfigDTO findById(Long id) {
 
 
-    ResponseEntity<ConfigDTO> returned = restTemplate.getForEntity(String.format("%sid?id=%s", firmQuoteStr, id), ConfigDTO.class);
+    ResponseEntity<ConfigDTO> returned = internalRestTemplate.getForEntity(String.format("%sid?id=%s", firmQuoteStr, id), ConfigDTO.class);
 
     return returned.getBody();
   }
@@ -56,20 +54,20 @@ public abstract class ConfigService {
 
     HttpEntity<ConfigDTO> request = new HttpEntity<ConfigDTO>(configDTO);
 
-    return restTemplate.postForObject(firmQuoteStr, request, ConfigDTO.class);
+    return internalRestTemplate.postForObject(firmQuoteStr, request, ConfigDTO.class);
   }
 
   public void update(ConfigDTO configDTO) {
 
     HttpEntity<ConfigDTO> request = new HttpEntity<ConfigDTO>(configDTO);
-    restTemplate.put(firmQuoteStr, request);
+    internalRestTemplate.put(firmQuoteStr, request);
   }
 
 
   public List<ConfigDTO> getAll(String code, String type) {
 
     String url = String.format("%s?code=%s&type=%s", firmQuoteStr, code, type);
-    ConfigDTO[] responseEntity = restTemplate.getForObject(url, ConfigDTO[].class);
+    ConfigDTO[] responseEntity = internalRestTemplate.getForObject(url, ConfigDTO[].class);
 
     return Arrays.asList(responseEntity);
 

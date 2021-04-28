@@ -31,7 +31,7 @@ public class FirmSplitService {
   private EODFirmSplitRepository eODFirmSplitRepository;
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate internalRestTemplate;
 
   @Value("${referential.firm.split.baseurl}")
   private String firmSplitStr;
@@ -71,7 +71,7 @@ public class FirmSplitService {
 
     HttpEntity<FirmSplitDTO> request = new HttpEntity<FirmSplitDTO>(firmSplitDTO);
 
-    return restTemplate.postForObject(firmSplitStr, request, FirmSplitDTO.class);
+    return internalRestTemplate.postForObject(firmSplitStr, request, FirmSplitDTO.class);
 
   }
 }

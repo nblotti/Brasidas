@@ -35,7 +35,7 @@ public class IndexCompositionService {
 
 
   @Autowired
-  protected RestTemplate restTemplate;
+  protected RestTemplate internalRestTemplate;
 
   @Autowired
   protected ModelMapper modelMapper;
@@ -93,7 +93,7 @@ public class IndexCompositionService {
 
     HttpEntity<Collection<IndexCompositionDTO>> request = new HttpEntity<Collection<IndexCompositionDTO>>(indexCompositionDTOS);
 
-    IndexCompositionDTO[] responseEntity = restTemplate.postForObject(indexComponentUrl, request, IndexCompositionDTO[].class);
+    IndexCompositionDTO[] responseEntity = internalRestTemplate.postForObject(indexComponentUrl, request, IndexCompositionDTO[].class);
 
     return Arrays.asList(responseEntity);
 
@@ -101,7 +101,7 @@ public class IndexCompositionService {
 
   public void deleteAll() {
 
-    restTemplate.delete(indexComponentUrl);
+    internalRestTemplate.delete(indexComponentUrl);
 
 
   }

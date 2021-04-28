@@ -30,7 +30,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
   public String idpValidationUrl;
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate internalRestTemplate;
 
   @Bean
   public HttpFirewall defaultHttpFirewall() {

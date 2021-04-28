@@ -90,10 +90,9 @@ public class BrasidasApplication {
   }
 
   @Bean
-  public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder, JwtLocalToken jwtLocalToken) {
+  public RestTemplate internalRestTemplate(RestTemplateBuilder restTemplateBuilder, JwtLocalToken jwtLocalToken) {
 
 
-    //RestTemplate restTemplate = externalRestTemplate(restTemplateBuilder);
     RestTemplate restTemplate = restTemplateBuilder
       .setConnectTimeout(Duration.ofSeconds(30))
       .setReadTimeout(Duration.ofMinutes(5))

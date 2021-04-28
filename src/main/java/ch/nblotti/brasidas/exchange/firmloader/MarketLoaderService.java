@@ -212,11 +212,6 @@ public class MarketLoaderService {
 
 
 
-
-    if (isApiCallToElevated())
-      return;
-
-
     List<ConfigDTO> configDTOS = marketLoadConfigService.getAll(LOADER, RUNNING_JOBS);
 
     List<ConfigDTO> running = getJobsInGivenStatus(configDTOS, JobStatus.RUNNING);
@@ -254,7 +249,6 @@ public class MarketLoaderService {
           .setHeader("erroredId", currentErrored.getId())
           .build();
 
-
         marketCleanerStateMachine.sendEvent(message);
         return;
 
@@ -281,6 +275,9 @@ public class MarketLoaderService {
       marketLoadConfigService.update(current);
       return;
     }
+
+    if (isApiCallToElevated())
+      return;
 
     Message<MARKET_LOADER_EVENTS> message = MessageBuilder
       .withPayload(MARKET_LOADER_EVENTS.EVENT_RECEIVED)

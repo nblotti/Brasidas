@@ -1,8 +1,6 @@
 package ch.nblotti.brasidas.exchange.firmvaluation;
 
 
-import ch.nblotti.brasidas.exchange.firminfos.FirmInfoDTO;
-import ch.nblotti.brasidas.exchange.firmsharestats.FirmShareStatsDTO;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
@@ -15,10 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 
 @Service
@@ -30,7 +25,7 @@ public class FirmValuationService {
   public String firmValuationStr;
 
   @Autowired
-  RestTemplate restTemplate;
+  RestTemplate internalRestTemplate;
 
   @Autowired
   private EODFirmValuationRepository EODFirmValuationRepository;
@@ -84,7 +79,7 @@ public class FirmValuationService {
 
     HttpEntity<FirmValuationDTO> request = new HttpEntity<FirmValuationDTO>(firmValuationDTO);
 
-    FirmValuationDTO responseEntity = restTemplate.postForObject(firmValuationStr, request, FirmValuationDTO.class);
+    FirmValuationDTO responseEntity = internalRestTemplate.postForObject(firmValuationStr, request, FirmValuationDTO.class);
 
 
     return responseEntity;
@@ -92,6 +87,6 @@ public class FirmValuationService {
 
 
   public void deleteByDate(LocalDate runDate) {
-    restTemplate.delete(String.format("%s?localDate=%s",firmValuationStr, runDate.format(format1)));
+    internalRestTemplate.delete(String.format("%s?localDate=%s",firmValuationStr, runDate.format(format1)));
   }
 }

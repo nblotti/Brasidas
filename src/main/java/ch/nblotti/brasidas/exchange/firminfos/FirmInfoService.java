@@ -15,10 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 
 @Service
@@ -34,7 +31,7 @@ public class FirmInfoService {
   public String firmInfoStr;
 
   @Autowired
-  RestTemplate restTemplate;
+  RestTemplate internalRestTemplate;
 
   @Autowired
   EODFirmInfoRepository eODFirmInfoRepository;
@@ -117,7 +114,7 @@ public class FirmInfoService {
 
     HttpEntity<FirmInfoDTO> request = new HttpEntity<FirmInfoDTO>(firmInfoDTO);
 
-    FirmInfoDTO responseEntity = restTemplate.postForObject(firmInfoStr, request, FirmInfoDTO.class);
+    FirmInfoDTO responseEntity = internalRestTemplate.postForObject(firmInfoStr, request, FirmInfoDTO.class);
 
 
     return firmInfoDTO;
@@ -127,6 +124,6 @@ public class FirmInfoService {
 
     public void deleteByDate(LocalDate runDate) {
 
-      restTemplate.delete(String.format("%s?localDate=%s",firmInfoStr, runDate.format(format1)));
+      internalRestTemplate.delete(String.format("%s?localDate=%s",firmInfoStr, runDate.format(format1)));
     }
 }

@@ -1,7 +1,6 @@
 package ch.nblotti.brasidas.index.quote;
 
 
-import ch.nblotti.brasidas.exchange.firm.ExchangeFirmQuoteDTO;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
@@ -35,7 +34,7 @@ public class IndexQuoteService {
   protected ModelMapper modelMapper;
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate internalRestTemplate;
 
   @Value("${referential.index.quote.baseurl}")
   private String indexQuoteStr;
@@ -83,7 +82,7 @@ public class IndexQuoteService {
 
     HttpEntity<IndexQuoteDTO> request = new HttpEntity<IndexQuoteDTO>(indexQuoteDTO);
 
-    return restTemplate.postForObject(indexQuoteStr, request, IndexQuoteDTO.class);
+    return internalRestTemplate.postForObject(indexQuoteStr, request, IndexQuoteDTO.class);
 
   }
 

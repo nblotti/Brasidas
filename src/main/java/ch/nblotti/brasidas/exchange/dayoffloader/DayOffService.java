@@ -33,7 +33,7 @@ public class DayOffService {
   private EODDayOffRepository eODDayOffRepository;
 
   @Autowired
-  private RestTemplate restTemplate;
+  private RestTemplate internalRestTemplate;
 
 
   @Value("${referential.dayoff.baseurl}")
@@ -81,7 +81,7 @@ public class DayOffService {
 
     HttpEntity<DayOffDTO> request = new HttpEntity<DayOffDTO>(s);
 
-    return restTemplate.postForObject(dayOffStr, request, DayOffDTO.class);
+    return internalRestTemplate.postForObject(dayOffStr, request, DayOffDTO.class);
 
   }
 
@@ -89,6 +89,6 @@ public class DayOffService {
 
     HttpEntity<TimeDTO> request = new HttpEntity<>(s);
 
-    return restTemplate.postForObject(timeStr, request, TimeDTO.class);
+    return internalRestTemplate.postForObject(timeStr, request, TimeDTO.class);
   }
 }

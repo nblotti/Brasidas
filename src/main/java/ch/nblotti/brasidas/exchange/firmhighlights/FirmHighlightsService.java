@@ -1,7 +1,6 @@
 package ch.nblotti.brasidas.exchange.firmhighlights;
 
 
-import ch.nblotti.brasidas.exchange.firminfos.FirmInfoDTO;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
@@ -14,10 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 
 @Service
@@ -32,7 +28,7 @@ public class FirmHighlightsService {
   public String firmHighlightStr;
 
   @Autowired
-  RestTemplate restTemplate;
+  RestTemplate internalRestTemplate;
 
 
   @Autowired
@@ -108,7 +104,7 @@ public class FirmHighlightsService {
 
     HttpEntity<FirmHighlightsDTO> request = new HttpEntity<FirmHighlightsDTO>(firmHighlightsDTO);
 
-    FirmHighlightsDTO responseEntity = restTemplate.postForObject(firmHighlightStr, request, FirmHighlightsDTO.class);
+    FirmHighlightsDTO responseEntity = internalRestTemplate.postForObject(firmHighlightStr, request, FirmHighlightsDTO.class);
 
     return firmHighlightsDTO;
 
@@ -116,6 +112,6 @@ public class FirmHighlightsService {
 
 
   public void deleteByDate(LocalDate runDate) {
-    restTemplate.delete(String.format("%s?localDate=%s",firmHighlightStr, runDate.format(format1)));
+    internalRestTemplate.delete(String.format("%s?localDate=%s",firmHighlightStr, runDate.format(format1)));
   }
 }
