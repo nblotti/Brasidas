@@ -23,6 +23,7 @@ import org.springframework.statemachine.config.builders.StateMachineConfiguratio
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,8 +35,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @EnableStateMachine(name = "splitStateMachine")
 public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_SPLIT_STATES, MARKET_SPLIT_EVENTS> {
-
-
 
 
   @Autowired
@@ -140,7 +139,7 @@ public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_
 
         ConfigDTO current = marketLoadConfigService.findById(id);
 
-        current.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current)+1));
+        current.setValue(String.format(SplitConfigService.CONFIG_DTO_VALUE_STR, marketLoadConfigService.parseDate(current).format(format1), JobStatus.RUNNING, LocalDateTime.now().format(formatMessage), marketLoadConfigService.retryCount(current) + 1));
         marketLoadConfigService.update(current);
 
 
@@ -154,6 +153,7 @@ public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_
             firmSplits.stream().map(s -> {
               return firmSplitService.saveFirmSplit(s);
             });
+            log.info(String.format("%s - Splits job - Treating %s  splits", runDate.format(format1), firmSplits.size()));
 
             context.getExtendedState().getVariables().put("runDate", runDate);
             context.getExtendedState().getVariables().put("splits", firmSplits);
@@ -185,7 +185,9 @@ public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_
         Message<MARKET_SPLIT_EVENTS> message;
         LocalDate runDate = (LocalDate) stateContext.getExtendedState().getVariables().get("runDate");
         List<FirmSplitDTO> firmSplits = (List<FirmSplitDTO>) stateContext.getExtendedState().getVariables().get("splits");
-        Long id = (Long)stateContext.getExtendedState().getVariables().get("splitId");
+        Long id = (Long) stateContext.getExtendedState().getVariables().get("splitId");
+
+        LocalDateTime runTimeStart = LocalDateTime.now();
 
         for (FirmSplitDTO firmSplitDTO : firmSplits) {
 
@@ -204,7 +206,7 @@ public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_
             //on charge les quotes historiques pour ce code et ce range
             List<FirmQuoteDTO> dbfirmQuotes = firmService.getFirmQuoteByDate(first.getDate(), runDate, code, EXCHANGE);
             //on crée une map par date et prix
-            Map<LocalDate, Float> quotesByDate = dbfirmQuotes.stream().collect(Collectors.toMap(FirmQuoteDTO::getDate,FirmQuoteDTO::getAdjustedClose));
+            Map<LocalDate, Float> quotesByDate = dbfirmQuotes.stream().collect(Collectors.toMap(FirmQuoteDTO::getDate, FirmQuoteDTO::getAdjustedClose));
 
             //on update les prix en base
             for (ExchangeFirmQuoteDTO current : savedQuotes) {
@@ -220,12 +222,15 @@ public class MarketSplitLoader extends EnumStateMachineConfigurerAdapter<MARKET_
             message = MessageBuilder
               .withPayload(MARKET_SPLIT_EVENTS.SUCCESS).build();
           } catch (Exception ex) {
-            log.error(String.format("%s - %s error updating quote", firmSplitDTO.getExchange(), firmSplitDTO.getCode()));
+            log.error(String.format("%s - Splits job - %s - error updating quotes", firmSplitDTO.getExchange(), firmSplitDTO.getCode()));
             log.error(ex.getMessage());
             continue;
           }
           stateContext.getStateMachine().sendEvent(message);
         }
+        LocalDateTime runTimeEnd = LocalDateTime.now();
+        Duration diff = Duration.between(runTimeStart, runTimeEnd);
+        log.info(String.format("%s - Splits job ended - %s treated in %s minutes.", runDate.format(format1), firmSplits.size(), diff.toMinutes()));
       }
     };
 
