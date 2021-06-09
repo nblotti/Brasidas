@@ -26,66 +26,67 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 
-  @Value("${zeus.validation.url}")
-  public String idpValidationUrl;
+    @Value("${zeus.validation.url}")
+    public String idpValidationUrl;
 
-  @Autowired
-  private RestTemplate internalRestTemplate;
+    @Autowired
+    private RestTemplate internalRestTemplate;
 
-  @Bean
-  public HttpFirewall defaultHttpFirewall() {
-    DefaultHttpFirewall firewall = new DefaultHttpFirewall();
-    return firewall;
-  }
+    @Bean
+    public HttpFirewall defaultHttpFirewall() {
+        DefaultHttpFirewall firewall = new DefaultHttpFirewall();
+        return firewall;
+    }
 
-  @Override
-  public void configure(WebSecurity web) throws Exception {
-    super.configure(web);
-    web.httpFirewall(defaultHttpFirewall());
-  }
+    @Override
+    public void configure(WebSecurity web) throws Exception {
+        super.configure(web);
+        web.httpFirewall(defaultHttpFirewall());
+    }
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
-    http.cors().and()
-      .csrf().disable()
-      .authorizeRequests()
-      .antMatchers("/ping").permitAll()
-      .anyRequest().authenticated()
-      .and()
-      .addFilter(jwtAuthorizationFilter())
-      .sessionManagement()
-      .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-  }
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.cors().and()
+                .csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/ping").permitAll()
+                .antMatchers("/actuator/**").permitAll()
+                .anyRequest().authenticated()
+                .and()
+                .addFilter(jwtAuthorizationFilter())
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+    }
 
-  @Override
-  public void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.inMemoryAuthentication()
-      .withUser("user")
-      .password(passwordEncoder().encode("password"))
-      .authorities("ROLE_USER");
-  }
+    @Override
+    public void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication()
+                .withUser("user")
+                .password(passwordEncoder().encode("password"))
+                .authorities("ROLE_USER");
+    }
 
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-  @Bean
-  public CorsConfigurationSource corsConfigurationSource() {
-    final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", new CorsConfiguration().applyPermitDefaultValues());
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", new CorsConfiguration().applyPermitDefaultValues());
 
-    return source;
-  }
+        return source;
+    }
 
-  @Bean
-  public JwtAuthorizationFilter jwtAuthorizationFilter() throws Exception {
-    return new JwtAuthorizationFilter(authenticationManagerBean(), idpValidationUrl);
-  }
+    @Bean
+    public JwtAuthorizationFilter jwtAuthorizationFilter() throws Exception {
+        return new JwtAuthorizationFilter(authenticationManagerBean(), idpValidationUrl);
+    }
 
-  @Bean(name = BeanIds.AUTHENTICATION_MANAGER)
-  @Override
-  public AuthenticationManager authenticationManagerBean() throws Exception {
-    return super.authenticationManagerBean();
-  }
+    @Bean(name = BeanIds.AUTHENTICATION_MANAGER)
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
 }
